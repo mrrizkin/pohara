@@ -1,0 +1,52 @@
+{
+	"name": "pohara",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"lint": "eslint .",
+		"preview": "vite preview",
+		"setup": "pnpm install && go mod tidy",
+		"dev:assets": "vite",
+		"dev:app": "air",
+		"build:assets": "vite build",
+		"build:app": "go build -v -trimpath -o ./bin/app ./main.go",
+		"dev": "concurrently \"pnpm dev:assets\" \"bash -c 'sleep 5 && pnpm dev:app'\"",
+		"build": "pnpm build:assets && pnpm build:app",
+		"generate:swagger": "swag init -g ./main.go -ot json -o ./public/docs --pd --parseInternal"
+	},
+	"dependencies": {
+		"@inertiajs/react": "^2.0.0",
+		"@radix-ui/react-slot": "^1.1.1",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-react": "^0.469.0",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"tailwind-merge": "^2.6.0",
+		"tailwindcss-animate": "^1.0.7"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.17.0",
+		"@types/node": "^22.10.2",
+		"@types/react": "^18.3.17",
+		"@types/react-dom": "^18.3.5",
+		"@vitejs/plugin-react-swc": "^3.5.0",
+		"autoprefixer": "^10.4.20",
+		"concurrently": "^9.1.0",
+		"eslint": "^9.17.0",
+		"eslint-plugin-react": "^7.37.2",
+		"eslint-plugin-react-hooks": "^5.0.0",
+		"eslint-plugin-react-refresh": "^0.4.16",
+		"globals": "^15.13.0",
+		"postcss": "^8.4.49",
+		"prettier": "^3.4.1",
+		"prettier-plugin-django-alpine": "^1.3.0",
+		"tailwindcss": "^3.4.15",
+		"typescript": "~5.6.2",
+		"typescript-eslint": "^8.18.2",
+		"vite": "^6.0.3",
+		"vite-plugin-backend": "^1.0.0",
+		"vite-plugin-full-reload": "^1.2.0"
+	}
+}
