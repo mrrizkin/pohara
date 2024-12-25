@@ -21,37 +21,55 @@ type Database struct {
 	*gorm.DB
 }
 
+type Dependencies struct {
+	fx.In
+
+	ConfigDB *config.Database
+	Log      *logger.Logger
+}
+
+type Result struct {
+	fx.Out
+
+	Database *Database
+}
+
 func New(
 	lc fx.Lifecycle,
-	cfg *config.Database,
-	log *logger.Logger,
-) (*Database, error) {
+	deps Dependencies,
+) (Result, error) {
 	var driver DatabaseDriver
-	switch cfg.DRIVER {
+	switch deps.ConfigDB.DRIVER {
 	case "mysql", "mariadb", "maria":
-		driver = provider.NewMysql(cfg)
+		driver = provider.NewMysql(deps.ConfigDB)
 	case "pgsql", "postgres", "postgresql":
-		driver = provider.NewPostgres(cfg)
+		driver = provider.NewPostgres(deps.ConfigDB)
 	case "sqlite", "sqlite3", "file":
-		driver = provider.NewSqlite(cfg, log)
+		driver = provider.NewSqlite(deps.ConfigDB, deps.Log)
 	default:
-		return nil, fmt.Errorf("unknown database driver: %s", cfg.DRIVER)
+		return Result{}, fmt.Errorf("unknown database driver: %s", deps.ConfigDB.DRIVER)
 
 	}
 
-	gormDB, err := driver.Connect(cfg)
+	db, err := driver.Connect(deps.ConfigDB)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 
-	db := Database{DB: gormDB}
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
-			return db.Stop()
+			sqlDB, err := db.DB()
+			if err != nil {
+				return err
+			}
+
+			return sqlDB.Close()
 		},
 	})
 
-	return &db, nil
+	return Result{
+		Database: &Database{DB: db},
+	}, nil
 }
 
 func (d *Database) Stop() error {

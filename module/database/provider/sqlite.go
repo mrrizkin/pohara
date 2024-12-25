@@ -36,14 +36,14 @@ func (s *Sqlite) Connect(cfg *config.Database) (*gorm.DB, error) {
 
 	err = db.Exec("PRAGMA journal_mode = WAL;").Error
 	if err != nil {
-		s.log.Error("Failed to enable WAL journal mode", "error", err)
+		s.log.Warn("Failed to enable WAL journal mode", "error", err)
 	} else {
 		s.log.Info("Enabled WAL journal mode")
 	}
 
 	err = db.Exec("PRAGMA foreign_keys = ON;").Error
 	if err != nil {
-		s.log.Error("Failed to enable foreign keys", "error", err)
+		s.log.Warn("Failed to enable foreign keys", "error", err)
 	} else {
 		s.log.Info("Enabled foreign keys")
 	}

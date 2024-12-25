@@ -37,7 +37,9 @@ func New(
 	directory := cfg.VIEW_DIRECTORY
 	extension := cfg.VIEW_EXTENSION
 	env := &exec.Environment{
-		Context:           exec.EmptyContext().Update(builtins.GlobalFunctions).Update(builtins.GlobalVariables),
+		Context: exec.EmptyContext().
+			Update(builtins.GlobalFunctions).
+			Update(builtins.GlobalVariables),
 		Filters:           builtins.Filters,
 		Tests:             builtins.Tests,
 		ControlStructures: builtins.ControlStructures,

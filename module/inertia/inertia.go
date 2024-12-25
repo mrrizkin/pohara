@@ -2,7 +2,6 @@ package inertia
 
 import (
 	"html/template"
-	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -11,11 +10,12 @@ import (
 
 	"github.com/mrrizkin/pohara/config"
 	"github.com/mrrizkin/pohara/module/vite"
+	"github.com/mrrizkin/pohara/resources"
 )
 
 // Constants
 const (
-	defaultTemplatePath = "resources/views/root.html"
+	defaultTemplatePath = "resources/ts/index.html"
 )
 
 // Inertia wraps gonertia.Inertia with additional Vite integration
@@ -39,13 +39,6 @@ type Result struct {
 	Inertia *Inertia
 }
 
-// responseWriter implements http.ResponseWriter for adapting between Fiber and net/http
-type responseWriter struct {
-	body       []byte
-	statusCode int
-	header     http.Header
-}
-
 // New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (Result, error) {
 	options, err := buildOptions(deps)
@@ -53,7 +46,12 @@ func New(deps Dependencies) (Result, error) {
 		return Result{}, err
 	}
 
-	i, err := gonertia.NewFromFile(defaultTemplatePath, options...)
+	r, err := resources.InertiaRoot.Open("inertia/index.html")
+	if err != nil {
+		return Result{}, err
+	}
+
+	i, err := gonertia.NewFromReader(r, options...)
 	if err != nil {
 		return Result{}, err
 	}
@@ -110,53 +108,4 @@ func registerTemplateFuncs(i *gonertia.Inertia, v *vite.Vite) {
 	i.ShareTemplateFunc("vite", func(input string) template.HTML {
 		return template.HTML(v.Entry(input))
 	})
-}
-
-func writeResponse(ctx *fiber.Ctx, w *responseWriter) error {
-	for key, values := range w.Header() {
-		for _, value := range values {
-			ctx.Set(key, value)
-		}
-	}
-
-	return ctx.Type("html").Status(w.StatusCode()).Send(w.Body())
-}
-
-// responseWriter implementation
-
-func newResponseWriter() *responseWriter {
-	return &responseWriter{
-		header:     http.Header{},
-		statusCode: http.StatusOK,
-	}
-}
-
-func (w *responseWriter) Header() http.Header {
-	return w.header
-}
-
-func (w *responseWriter) Write(b []byte) (int, error) {
-	if w.statusCode == 0 {
-		w.statusCode = http.StatusOK
-	}
-
-	w.body = append(w.body, b...)
-	return len(b), nil
-}
-
-func (w *responseWriter) WriteHeader(statusCode int) {
-	if w.statusCode == 0 {
-		w.statusCode = statusCode
-	}
-}
-
-func (w *responseWriter) Body() []byte {
-	return w.body
-}
-
-func (w *responseWriter) StatusCode() int {
-	if w.statusCode == 0 {
-		return http.StatusOK
-	}
-	return w.statusCode
 }

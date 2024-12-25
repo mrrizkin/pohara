@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Error {{.Code}}</title>
+    <style>
+        :root {
+            --purple: #7C3AED;
+            --purple-light: #EDE9FE;
+            --gray-900: #111827;
+            --gray-600: #4B5563;
+            --gray-300: #D1D5DB;
+            --code-bg: #1a1a1a;
+        }
+
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f7f7f7;
+            color: var(--gray-900);
+            line-height: 1.5;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .error-box {
+            background: white;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-header {
+            background: var(--purple);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-code {
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 0.25rem;
+        }
+
+        .error-message {
+            font-weight: 500;
+            font-size: 1.125rem;
+        }
+
+        .content {
+            padding: 1.5rem;
+        }
+
+        .stack-trace {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875rem;
+        }
+
+        .stack-item {
+            margin: 0.5rem 0;
+            padding: 1rem;
+            background: var(--purple-light);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stack-item:hover {
+            background: var(--purple);
+            color: white;
+        }
+
+        .stack-item:hover .function-name {
+            color: white;
+        }
+
+        .stack-item:hover .file-info {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stack-item.active {
+            background: var(--purple);
+            color: white;
+        }
+
+        .stack-item.active .function-name {
+            color: white;
+        }
+
+        .stack-item.active .file-info {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stack-item.external {
+            opacity: 0.7;
+            background: #f3f4f6;
+        }
+
+        .stack-item.external .function-name {
+            color: var(--gray-600);
+        }
+
+        .stack-item.external:hover {
+            background: #e5e7eb;
+            color: var(--gray-900);
+        }
+
+        .stack-item.external:hover .function-name {
+            color: var(--gray-600);
+        }
+
+        .function-name {
+            color: var(--purple);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-info {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+
+        .code-context {
+            display: none;
+            margin-top: 1rem;
+            background: var(--code-bg);
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+
+        .stack-item.active .code-context {
+            display: block;
+        }
+
+        .code-line {
+            display: flex;
+            min-width: 100%;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .line-number {
+            color: #6b7280;
+            padding: 0.125rem 1rem;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #374151;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .line-content {
+            padding: 0.125rem 1rem;
+            color: #e5e7eb;
+            white-space: pre;
+            flex: 1;
+        }
+
+        .current-line {
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .current-line .line-number {
+            color: var(--purple-light);
+            font-weight: bold;
+        }
+
+        .framework-label {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--gray-600);
+            font-size: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 640px) {
+            .error-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="framework-label">Application Error</div>
+        <div class="error-box">
+            <div class="error-header">
+                <div class="status-code">{{.Code}}</div>
+                <div class="error-message">{{.Message}}</div>
+            </div>
+            {{if .Frames}}
+            <div class="content">
+                <ul class="stack-trace">
+                    {{range .Frames}}
+                    <li class="stack-item {{if not .IsInternal}}external{{end}}">
+                        <span class="function-name">{{.Frame.Function}}</span>
+                        <span class="file-info">{{.Frame.File}}:{{.Frame.Line}}</span>
+                        {{if and .CodeLines .IsInternal}}
+                        <div class="code-context">
+                            {{range .CodeLines}}
+                            <div class="code-line {{if .IsCurrent}}current-line{{end}}">
+                                <span class="line-number">{{.Number}}</span>
+                                <span class="line-content">{{.Content}}</span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </li>
+                    {{end}}
+                </ul>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstInternalItem = document.querySelector('.stack-item:not(.external)') ||
+                                    document.querySelector('.stack-item');
+            if (firstInternalItem) firstInternalItem.classList.add('active');
+
+            document.querySelectorAll('.stack-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.stack-item').forEach(si => {
+                        si.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

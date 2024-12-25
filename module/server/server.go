@@ -52,150 +52,12 @@ func New(deps Dependencies) (Result, error) {
 			}
 
 			if c.Get("X-Requested-With") != "XMLHttpRequest" {
-				// stackTrace := debugtrace.StackTrace()
 				if stackTrace, ok := c.Locals("stack_trace").([]debugtrace.StackFrame); ok {
-					errMsg := err.Error()
-					markup := ""
-
-					for _, stack := range stackTrace {
-						markup = fmt.Sprintf(`%s<li><strong>%s</strong> in <em>%s</em> at line %d</li>`,
-							markup, stack.Function, stack.File, stack.Line)
-					}
-
-					html := fmt.Sprintf(`<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Error %d</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #343a40;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .header {
-            background-color: #dc3545;
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-        }
-        .content {
-            padding: 20px;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            margin-bottom: 10px;
-            background: #f8d7da;
-            padding: 10px;
-            border-left: 5px solid #dc3545;
-            border-radius: 4px;
-        }
-        strong {
-            font-weight: bold;
-        }
-        em {
-            font-style: italic;
-            color: #6c757d;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Error %d</h1>
-            <p>%s</p>
-        </div>
-        <div class="content">
-            <h2>Stack Trace:</h2>
-            <ul>
-                %s
-            </ul>
-        </div>
-    </div>
-</body>
-</html>`, code, code, errMsg, markup)
-
+					html := errorPageWithTrace(stackTrace, err, code)
 					return c.Type("html").Send([]byte(html))
 				}
 
-				errMsg := err.Error()
-
-				html := fmt.Sprintf(`<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Error %d</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #343a40;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .header {
-            background-color: #dc3545;
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-        }
-        .content {
-            padding: 20px;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            margin-bottom: 10px;
-            background: #f8d7da;
-            padding: 10px;
-            border-left: 5px solid #dc3545;
-            border-radius: 4px;
-        }
-        strong {
-            font-weight: bold;
-        }
-        em {
-            font-style: italic;
-            color: #6c757d;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Error %d</h1>
-            <p>%s</p>
-        </div>
-        
-    </div>
-</body>
-</html>`, code, code, errMsg)
-
+				html := errorPage(err, code)
 				return c.Type("html").Send([]byte(html))
 			}
 
@@ -231,7 +93,10 @@ var Module = fx.Module("server",
 		fx.Annotate(setupRouter, fx.ParamTags("", "", "", `group:"router"`, `group:"api_router"`)),
 	),
 	fx.Invoke(func(app *fiber.App, config *config.App, log *logger.Logger, view *view.View) error {
-		view.Compile()
+		if err := view.Compile(); err != nil {
+			log.Fatal("failed to compile view", "error", err)
+		}
+
 		log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
 		return app.Listen(fmt.Sprintf(":%d", config.APP_PORT))
 	}),
