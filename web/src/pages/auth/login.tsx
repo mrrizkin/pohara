@@ -1,5 +1,6 @@
-import { LoginForm } from "@/components/login-form";
 import { Head } from "@inertiajs/react";
+
+import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {
 	return (

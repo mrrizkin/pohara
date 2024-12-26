@@ -1,6 +1,9 @@
-import { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
+import { ReactNode } from "react";
+
+import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -12,9 +15,8 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { NavCollapsible, NavItem, NavLink, type NavGroup } from "./types";
+
+import { NavCollapsible, type NavGroup, NavItem, NavLink } from "./types";
 
 export function NavGroup({ title, items }: NavGroup) {
 	const { state } = useSidebar();
@@ -38,7 +40,7 @@ export function NavGroup({ title, items }: NavGroup) {
 	);
 }
 
-const NavBadge = ({ children }: { children: ReactNode }) => <Badge className="text-xs rounded-full px-1 py-0">{children}</Badge>;
+const NavBadge = ({ children }: { children: ReactNode }) => <Badge className="rounded-full px-1 py-0 text-xs">{children}</Badge>;
 
 const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
 	const { setOpenMobile } = useSidebar();

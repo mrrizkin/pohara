@@ -18,10 +18,11 @@ import {
 	ServerOff,
 	Settings,
 	UserCog,
-	Users,
 	UserX,
+	Users,
 	Wrench,
 } from "lucide-react";
+
 import { type SidebarData } from "../types";
 
 export const sidebarData: SidebarData = {

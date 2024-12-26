@@ -1,10 +1,13 @@
+import { ArrowBigRightDash, Laptop, Moon, Sun } from "lucide-react";
 import React from "react";
+
 import { useSearch } from "@/context/search-context";
 import { useTheme } from "@/context/theme-context";
+
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { sidebarData } from "./layout/data/sidebar-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowBigRightDash, Laptop, Moon, Sun } from "lucide-react";
+
+import { sidebarData } from "./layout/data/sidebar-data";
 
 export function CommandMenu() {
 	// const navigate = useNavigate();
@@ -35,8 +38,7 @@ export function CommandMenu() {
 											value={navItem.title}
 											onSelect={() => {
 												runCommand(() => (window.location.href = navItem.url));
-											}}
-										>
+											}}>
 											<div className="mr-2 flex h-4 w-4 items-center justify-center">
 												<ArrowBigRightDash className="size-2 text-muted-foreground/80" />
 											</div>
@@ -50,8 +52,7 @@ export function CommandMenu() {
 										value={subItem.title}
 										onSelect={() => {
 											runCommand(() => (window.location.href = subItem.url));
-										}}
-									>
+										}}>
 										<div className="mr-2 flex h-4 w-4 items-center justify-center">
 											<ArrowBigRightDash className="size-2 text-muted-foreground/80" />
 										</div>

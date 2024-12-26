@@ -1,9 +1,12 @@
+import { Check, Moon, Sun } from "lucide-react";
 import { useEffect } from "react";
+
 import { cn } from "@/lib/utils";
+
 import { useTheme } from "@/context/theme-context";
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Check, Moon, Sun } from "lucide-react";
 
 export function ThemeSwitch() {
 	const { theme, setTheme } = useTheme();
