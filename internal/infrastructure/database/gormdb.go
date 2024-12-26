@@ -172,3 +172,11 @@ func (g *GormDatabase) Transaction(fn func(tx ports.Database) error) error {
 		return fn(txDB)
 	})
 }
+
+func (g *GormDatabase) Raw(dest interface{}, statement string, values ...interface{}) error {
+	return g.db.Raw(statement, values...).Scan(dest).Error
+}
+
+func (g *GormDatabase) Exec(statement string, values ...interface{}) error {
+	return g.db.Exec(statement, values...).Error
+}

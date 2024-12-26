@@ -24,4 +24,6 @@ type Database interface {
 	Save(value interface{}) error
 	Delete(value interface{}, conds ...interface{}) error
 	Transaction(fn func(tx Database) error) error
+	Raw(dest interface{}, statement string, values ...interface{}) error
+	Exec(statement string, values ...interface{}) error
 }

@@ -10,10 +10,12 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { Overview } from "./components/overview";
 import { RecentSales } from "./components/recent-sales";
 import { AuthenticatedLayout } from "@/components/layout/authenticated";
+import { Head } from "@inertiajs/react";
 
 export default function Dashboard() {
 	return (
 		<AuthenticatedLayout>
+			<Head title="Dashboard" />
 			{/* ===== Top Heading ===== */}
 			<Header>
 				<TopNav links={topNav} />
