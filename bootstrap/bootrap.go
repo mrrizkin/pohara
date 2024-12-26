@@ -4,6 +4,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 
+	"github.com/mrrizkin/pohara/app/auth"
 	"github.com/mrrizkin/pohara/app/dashboard"
 	"github.com/mrrizkin/pohara/app/user"
 	"github.com/mrrizkin/pohara/app/welcome"
@@ -29,24 +30,23 @@ func App() *fx.App {
 
 		fx.Provide(
 			hashing.New,
-			inertia.New,
 			session.New,
 			validator.New,
 		),
 
-		database.Module,
-		logger.Module,
-		cache.Module,
-
-		template.Module,
-		vite.Module,
-
+		auth.Module,
 		user.Module,
 		welcome.Module,
 		dashboard.Module,
 
+		cache.Module,
+		database.Module,
+		inertia.Module,
+		logger.Module,
 		scheduler.Module,
 		server.Module,
+		template.Module,
+		vite.Module,
 
 		fx.WithLogger(func(log ports.Logger) fxevent.Logger {
 			return log

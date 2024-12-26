@@ -39,6 +39,10 @@ type Result struct {
 	Inertia *Inertia
 }
 
+var Module = fx.Module("inertia",
+	fx.Provide(New),
+)
+
 // New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (Result, error) {
 	options, err := buildOptions(deps)
