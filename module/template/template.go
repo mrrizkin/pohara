@@ -183,7 +183,7 @@ func setupEnv(
 	filter []*exec.FilterSet,
 	test []*exec.TestSet,
 	controlStructure []*exec.ControlStructureSet,
-) {
+) *Template {
 	for _, c := range ctx {
 		if c != nil {
 			template.env.Context.Update(c)
@@ -207,6 +207,8 @@ func setupEnv(
 			template.env.ControlStructures.Update(cs)
 		}
 	}
+
+	return template
 }
 
 func loader(t *Template) error {

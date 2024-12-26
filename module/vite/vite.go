@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 
 	goviteparser "github.com/mrrizkin/go-vite-parser"
+	"github.com/mrrizkin/pohara/module/template"
+	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/parser"
 	"go.uber.org/fx"
 )
 
@@ -16,6 +19,19 @@ type Result struct {
 
 	Vite *Vite
 }
+
+var Module = fx.Module("vite",
+	fx.Provide(New),
+
+	fx.Provide(
+		template.AsControl(func(v *Vite) *exec.ControlStructureSet {
+			return exec.NewControlStructureSet(map[string]parser.ControlStructureParser{
+				"vite":         viteParser(v),
+				"reactRefresh": reactRefreshParser(v),
+			})
+		}),
+	),
+)
 
 func New() (Result, error) {
 	vite := goviteparser.Parse(goviteparser.Config{

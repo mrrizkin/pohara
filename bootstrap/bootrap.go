@@ -16,8 +16,8 @@ import (
 	"github.com/mrrizkin/pohara/module/scheduler"
 	"github.com/mrrizkin/pohara/module/server"
 	"github.com/mrrizkin/pohara/module/session"
+	"github.com/mrrizkin/pohara/module/template"
 	"github.com/mrrizkin/pohara/module/validator"
-	"github.com/mrrizkin/pohara/module/view"
 	"github.com/mrrizkin/pohara/module/vite"
 )
 
@@ -30,13 +30,14 @@ func App() *fx.App {
 			logger.New,
 			database.New,
 			hashing.New,
-			view.New,
 			inertia.New,
-			vite.New,
 			session.New,
 			cache.New,
 			validator.New,
 		),
+
+		vite.Module,
+		template.Module,
 
 		user.Module,
 		welcome.Module,

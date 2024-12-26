@@ -23,7 +23,6 @@ import (
 	"github.com/mrrizkin/pohara/module/logger"
 	"github.com/mrrizkin/pohara/module/session"
 	"github.com/mrrizkin/pohara/module/validator"
-	"github.com/mrrizkin/pohara/module/view"
 )
 
 type Dependencies struct {
@@ -92,11 +91,7 @@ var Module = fx.Module("server",
 	fx.Decorate(
 		fx.Annotate(setupRouter, fx.ParamTags("", "", "", `group:"router"`, `group:"api_router"`)),
 	),
-	fx.Invoke(func(app *fiber.App, config *config.App, log *logger.Logger, view *view.View) error {
-		if err := view.Compile(); err != nil {
-			log.Fatal("failed to compile view", "error", err)
-		}
-
+	fx.Invoke(func(app *fiber.App, config *config.App, log *logger.Logger) error {
 		log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
 		return app.Listen(fmt.Sprintf(":%d", config.APP_PORT))
 	}),
