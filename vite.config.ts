@@ -8,12 +8,12 @@ export default defineConfig({
 	plugins: [
 		react(),
 		backendPlugin({
-			input: ["resources/ts/main.tsx"],
+			input: ["web/src/main.tsx"],
 		}),
 	],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "./resources/ts"),
+			"@": path.resolve(__dirname, "./web/src"),
 		},
 	},
 });
