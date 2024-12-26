@@ -5,20 +5,16 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/module/server"
-	"github.com/mrrizkin/pohara/module/template"
 )
 
-var Module = fx.Module("user",
+var Module = fx.Module("welcome",
 	fx.Provide(
-		server.AsWebRouter(func(t *template.Template) server.WebRouter {
-			return server.WebRouter{
-				Prefix: "/",
-				Router: func(r fiber.Router) {
-					r.Get("/", func(ctx *fiber.Ctx) error {
-						return t.Render(ctx, "welcome", fiber.Map{})
-					}).Name("welcome")
-				},
-			}
+		server.AsWebRouter(func() server.WebRouter {
+			return server.NewWebRouter("/", func(r *server.Router) {
+				r.Get("/", func(ctx *server.Ctx) error {
+					return ctx.Render("welcome", fiber.Map{})
+				}).Name("index")
+			}, "welcome")
 		}),
 	),
 )

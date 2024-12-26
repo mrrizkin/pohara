@@ -3,40 +3,28 @@ package server
 import (
 	"net/url"
 
-	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 )
 
 type WebRouter struct {
-	Prefix string
-	Router func(fiber.Router)
-	Name   string
+	prefix string
+	router func(*Router)
+	name   []string
 }
 
-func (w *WebRouter) SetPrefix(prefix string) *WebRouter {
-	w.Prefix = prefix
-	return w
-}
-
-func (w *WebRouter) SetRouter(router func(fiber.Router)) *WebRouter {
-	w.Router = router
-	return w
-}
-
-func (w *WebRouter) SetName(name string) *WebRouter {
-	w.Name = name
-	return w
+func NewWebRouter(prefix string, router func(*Router), names ...string) WebRouter {
+	return WebRouter{
+		prefix: prefix,
+		router: router,
+		name:   names,
+	}
 }
 
 type WebRouters []WebRouter
 
-func (wr WebRouters) Register(r fiber.Router) {
-	for _, router := range wr {
-		if router.Name != "" {
-			r.Route(router.Prefix, router.Router, router.Name)
-		} else {
-			r.Route(router.Prefix, router.Router)
-		}
+func (wr WebRouters) Register(router *Router) {
+	for _, r := range wr {
+		router.Route(r.prefix, r.router, r.name...)
 	}
 }
 
@@ -48,10 +36,19 @@ func AsWebRouter(f any) any {
 }
 
 type ApiRouter struct {
-	Version string
-	Prefix  string
-	Router  func(fiber.Router)
-	Name    string
+	version string
+	prefix  string
+	router  func(*Router)
+	name    []string
+}
+
+func NewApiRouter(version, prefix string, router func(*Router), names ...string) ApiRouter {
+	return ApiRouter{
+		prefix:  prefix,
+		router:  router,
+		name:    names,
+		version: version,
+	}
 }
 
 func AsApiRouter(f any) any {
@@ -63,18 +60,13 @@ func AsApiRouter(f any) any {
 
 type ApiRouters []ApiRouter
 
-func (ar ApiRouters) Register(r fiber.Router) {
-	for _, router := range ar {
-		prefix, err := url.JoinPath(router.Version, router.Prefix)
+func (ar ApiRouters) Register(router *Router) {
+	for _, r := range ar {
+		prefix, err := url.JoinPath(r.version, r.prefix)
 		if err != nil {
 			continue
 		}
 
-		if router.Name != "" {
-			r.Route(prefix, router.Router, router.Name)
-		} else {
-			r.Route(prefix, router.Router)
-		}
+		router.Route(prefix, r.router, r.name...)
 	}
-
 }

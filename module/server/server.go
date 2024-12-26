@@ -19,9 +19,11 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/mrrizkin/pohara/config"
+	"github.com/mrrizkin/pohara/module/cache"
 	debugtrace "github.com/mrrizkin/pohara/module/debug-trace"
 	"github.com/mrrizkin/pohara/module/logger"
 	"github.com/mrrizkin/pohara/module/session"
+	"github.com/mrrizkin/pohara/module/template"
 	"github.com/mrrizkin/pohara/module/validator"
 )
 
@@ -89,7 +91,7 @@ func New(deps Dependencies) (Result, error) {
 var Module = fx.Module("server",
 	fx.Provide(New),
 	fx.Decorate(
-		fx.Annotate(setupRouter, fx.ParamTags("", "", "", `group:"router"`, `group:"api_router"`)),
+		fx.Annotate(setupRouter, fx.ParamTags("", "", "", "", "", "", "", `group:"router"`, `group:"api_router"`)),
 	),
 	fx.Invoke(func(app *fiber.App, config *config.App, log *logger.Logger) error {
 		log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
@@ -101,39 +103,57 @@ func setupRouter(
 	app *fiber.App,
 	session *session.Session,
 	config *config.App,
+	log *logger.Logger,
+	cache *cache.Cache,
+	validator *validator.Validator,
+	template *template.Template,
 	routes []WebRouter,
 	apiRoutes []ApiRouter,
 ) *fiber.App {
 	app.Get("/api/v1/docs/swagger", swagger(config))
 
 	(WebRouters)(routes).Register(
-		app.Group("/",
-			csrf.New(csrf.Config{
-				KeyLookup:         fmt.Sprintf("cookie:%s", config.CSRF_KEY),
-				CookieName:        config.CSRF_COOKIE_NAME,
-				CookieSameSite:    config.CSRF_SAME_SITE,
-				CookieSecure:      config.CSRF_SECURE,
-				CookieSessionOnly: true,
-				CookieHTTPOnly:    config.CSRF_HTTP_ONLY,
-				SingleUseToken:    true,
-				Expiration:        time.Duration(config.CSRF_EXPIRATION) * time.Second,
-				KeyGenerator:      utils.UUIDv4,
-				ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
-				Extractor:         csrf.CsrfFromCookie(config.CSRF_KEY),
-				Session:           session.Store,
-				SessionKey:        "fiber.csrf.token",
-				HandlerContextKey: "fiber.csrf.handler",
-			}),
-			cors.New(),
-			helmet.New(),
+		NewRouter(
+			app.Group("/",
+				csrf.New(csrf.Config{
+					KeyLookup:         fmt.Sprintf("cookie:%s", config.CSRF_KEY),
+					CookieName:        config.CSRF_COOKIE_NAME,
+					CookieSameSite:    config.CSRF_SAME_SITE,
+					CookieSecure:      config.CSRF_SECURE,
+					CookieSessionOnly: true,
+					CookieHTTPOnly:    config.CSRF_HTTP_ONLY,
+					SingleUseToken:    true,
+					Expiration:        time.Duration(config.CSRF_EXPIRATION) * time.Second,
+					KeyGenerator:      utils.UUIDv4,
+					ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
+					Extractor:         csrf.CsrfFromCookie(config.CSRF_KEY),
+					Session:           session.Store,
+					SessionKey:        "fiber.csrf.token",
+					HandlerContextKey: "fiber.csrf.handler",
+				}),
+				cors.New(),
+				helmet.New(),
+			),
+			template,
+			config,
+			cache,
+			log,
+			validator,
 		))
 
 	(ApiRouters)(apiRoutes).Register(
-		app.Group("/api",
-			cors.New(cors.Config{
-				AllowOrigins: "*",
-				AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
-			}),
+		NewRouter(
+			app.Group("/api",
+				cors.New(cors.Config{
+					AllowOrigins: "*",
+					AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
+				}),
+			),
+			template,
+			config,
+			cache,
+			log,
+			validator,
 		))
 
 	return app

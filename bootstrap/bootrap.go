@@ -36,8 +36,8 @@ func App() *fx.App {
 			validator.New,
 		),
 
-		vite.Module,
 		template.Module,
+		vite.Module,
 
 		user.Module,
 		welcome.Module,

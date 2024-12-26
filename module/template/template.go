@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/config"
 	"github.com/mrrizkin/pohara/module/cache"
 	"github.com/mrrizkin/pohara/module/database/sql"
@@ -143,38 +142,21 @@ func (t *Template) cacheKey(template string, data map[string]interface{}) sql.St
 }
 
 func (t *Template) Render(
-	ctx *fiber.Ctx,
 	template string,
 	data map[string]interface{},
-) error {
-	cacheKey := t.cacheKey(template, data)
-	if cacheKey.Valid {
-		if value, ok := t.cache.Get(cacheKey.String); ok {
-			if html, ok := value.([]byte); ok {
-				return ctx.Type("html").Send(html)
-			}
-
-			t.log.Warn("cached template invalid type", "template", template)
-		}
-	}
-
+) ([]byte, error) {
 	var buf bytes.Buffer
 	tmpl, ok := t.templates[template]
 	if !ok {
-		return fmt.Errorf("template %s not found", template)
+		return nil, fmt.Errorf("template %s not found", template)
 	}
 
 	err := tmpl.Execute(&buf, exec.NewContext(data))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	html := buf.Bytes()
-	if t.config.VIEW_CACHE && t.config.IsProduction() && cacheKey.Valid {
-		t.cache.Set(cacheKey.String, html)
-	}
-
-	return ctx.Type("html").Send(html)
+	return buf.Bytes(), nil
 }
 
 func setupEnv(
