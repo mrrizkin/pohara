@@ -7,19 +7,11 @@ import (
 	"github.com/mrrizkin/pohara/config"
 	debugtrace "github.com/mrrizkin/pohara/module/debug-trace"
 	"github.com/mrrizkin/pohara/module/logger/provider"
+	"github.com/mrrizkin/pohara/module/logger/types"
 )
 
-type LoggerProvider interface {
-	Info(msg string, args ...interface{})
-	Warn(msg string, args ...interface{})
-	Error(msg string, args ...interface{})
-	Fatal(msg string, args ...interface{})
-	FxLogEvent(event fxevent.Event)
-	GetLogger() interface{}
-}
-
 type Logger struct {
-	provider LoggerProvider
+	provider types.LoggerProvider
 }
 
 type Dependencies struct {
@@ -48,6 +40,12 @@ func New(deps Dependencies) (Result, error) {
 }
 
 // usage
+func (log *Logger) Scope(scope string) *Logger {
+	return &Logger{
+		provider: log.provider.Scope(scope),
+	}
+}
+
 func (log *Logger) Info(msg string, args ...interface{}) {
 	log.provider.Info(msg, args...)
 }

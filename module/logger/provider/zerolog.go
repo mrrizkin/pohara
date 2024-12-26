@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/mrrizkin/pohara/config"
+	"github.com/mrrizkin/pohara/module/logger/types"
 	"github.com/mrrizkin/pohara/module/logger/util"
 )
 
@@ -67,6 +68,13 @@ func Zerolog(config *config.App) (*ZeroLogger, error) {
 }
 
 // usage
+func (z *ZeroLogger) Scope(scope string) types.LoggerProvider {
+	zlog := z.Logger.With().Str("scope", scope).Logger()
+	return &ZeroLogger{
+		Logger: &zlog,
+	}
+}
+
 func (z *ZeroLogger) Info(msg string, args ...interface{}) {
 	z.argsParser(z.Logger.Info(), args...).Msg(msg)
 }

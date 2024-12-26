@@ -48,6 +48,10 @@ func (a *App) IsProduction() bool {
 	return a.APP_ENV == "production" || a.APP_ENV == "prod"
 }
 
+func (a *App) IsCacheView() bool {
+	return a.VIEW_CACHE && a.IsProduction()
+}
+
 func (a *App) CacheTTLSecond() time.Duration {
 	return time.Duration(a.CACHE_TTL) * time.Second
 }

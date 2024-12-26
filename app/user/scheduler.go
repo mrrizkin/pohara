@@ -25,7 +25,7 @@ type SchedulerResult struct {
 func Scheduler(deps SchedulerDependencies) SchedulerResult {
 	return SchedulerResult{
 		UserScheduler: &UserScheduler{
-			log: deps.Log,
+			log: deps.Log.Scope("user_scheduler"),
 		},
 	}
 }

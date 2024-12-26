@@ -35,7 +35,7 @@ type HandlerResult struct {
 func Handler(deps HandlerDependencies) HandlerResult {
 	return HandlerResult{
 		UserHandler: &UserHandler{
-			log:         deps.Log,
+			log:         deps.Log.Scope("user_handler"),
 			validator:   deps.Validator,
 			userService: deps.UserService,
 		},

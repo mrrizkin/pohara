@@ -45,7 +45,7 @@ func (c *Ctx) Render(template string, bind fiber.Map) error {
 	if err != nil {
 		return err
 	}
-	if c.router.config.VIEW_CACHE && c.router.config.IsProduction() && cacheKey.Valid {
+	if c.router.config.IsCacheView() && cacheKey.Valid {
 		c.router.cache.Set(cacheKey.String, html)
 	}
 
@@ -70,7 +70,7 @@ func (c *Ctx) ParseBodyAndValidate(out interface{}) error {
 }
 
 func (c *Ctx) cacheKey(template string, data map[string]interface{}) sql.StringNullable {
-	if !c.router.config.VIEW_CACHE || !c.router.config.IsProduction() {
+	if !c.router.config.IsCacheView() {
 		return sql.StringNullable{
 			Valid: false,
 		}

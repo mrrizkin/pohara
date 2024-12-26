@@ -15,7 +15,6 @@ import (
 	"github.com/mrrizkin/pohara/config"
 	"github.com/mrrizkin/pohara/module/cache"
 	"github.com/mrrizkin/pohara/module/database/sql"
-	"github.com/mrrizkin/pohara/module/logger"
 	"github.com/mrrizkin/pohara/resources"
 	"github.com/nikolalohinski/gonja/v2/builtins"
 	"github.com/nikolalohinski/gonja/v2/exec"
@@ -26,7 +25,6 @@ type Template struct {
 	fs     http.FileSystem
 	config *config.App
 	cache  *cache.Cache
-	log    *logger.Logger
 	env    *exec.Environment
 
 	templates map[string]*exec.Template
@@ -37,7 +35,6 @@ type Dependencies struct {
 
 	Config *config.App
 	Cache  *cache.Cache
-	Log    *logger.Logger
 }
 
 type Result struct {
@@ -103,7 +100,6 @@ func New(deps Dependencies) Result {
 		Template: &Template{
 			config: deps.Config,
 			cache:  deps.Cache,
-			log:    deps.Log,
 			env:    env,
 
 			fs: fs,
