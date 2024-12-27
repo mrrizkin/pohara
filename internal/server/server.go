@@ -57,11 +57,11 @@ func New(deps Dependencies) (Result, error) {
 			if c.Get("X-Requested-With") != "XMLHttpRequest" {
 				if stackTrace, ok := c.Locals("stack_trace").([]debugtrace.StackFrame); ok {
 					html := errorPageWithTrace(stackTrace, err, code)
-					return c.Type("html").Send([]byte(html))
+					return c.Type("html").Status(code).Send([]byte(html))
 				}
 
 				html := errorPage(err, code)
-				return c.Type("html").Send([]byte(html))
+				return c.Type("html").Status(code).Send([]byte(html))
 			}
 
 			return c.Status(code).JSON(validator.GlobalErrorResponse{
