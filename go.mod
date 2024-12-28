@@ -3,6 +3,7 @@ module github.com/mrrizkin/pohara
 go 1.23.4
 
 require (
+	github.com/DataDog/gostackparse v0.7.0
 	github.com/dgraph-io/ristretto/v2 v2.0.1
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gofiber/contrib/fiberzerolog v1.0.2

@@ -1,9 +1,10 @@
 package debugtrace
 
 import (
-	"fmt"
+	"bytes"
 	"runtime/debug"
-	"strings"
+
+	"github.com/DataDog/gostackparse"
 )
 
 type StackFrame struct {
@@ -12,41 +13,24 @@ type StackFrame struct {
 	Line     int    `json:"line"`
 }
 
-func StackTrace(skip int) []StackFrame {
+func StackTrace() ([]StackFrame, error) {
 	stack := debug.Stack()
-	lines := strings.Split(string(stack), "\n")
-	frames := make([]StackFrame, 0)
-
-	// Skip first 9 lines to remove this function and the logging calls
-	for i := skip; i < len(lines)-1; i += 2 {
-		// Skip empty lines
-		if len(lines[i]) == 0 {
-			continue
-		}
-
-		// Parse function name
-		funcName := strings.TrimSpace(lines[i])
-
-		// Parse file and line number
-		if i+1 >= len(lines) {
-			break
-		}
-		fileLine := strings.TrimSpace(lines[i+1])
-
-		var frame StackFrame
-		frame.Function = funcName
-
-		// Parse file:line format
-		if strings.Contains(fileLine, ":") {
-			parts := strings.Split(fileLine, ":")
-			frame.File = parts[0]
-			if len(parts) > 1 {
-				fmt.Sscanf(parts[1], "%d", &frame.Line)
-			}
-		}
-
-		frames = append(frames, frame)
+	goroutines, err := gostackparse.Parse(bytes.NewReader(stack))
+	if err != nil || len(err) > 0 {
+		return nil, err[0]
 	}
 
-	return frames
+	frames := make([]StackFrame, 0)
+
+	for _, goroutine := range goroutines {
+		for _, stack := range goroutine.Stack {
+			frames = append(frames, StackFrame{
+				Function: stack.Func,
+				Line:     stack.Line,
+				File:     stack.File,
+			})
+		}
+	}
+
+	return frames, nil
 }

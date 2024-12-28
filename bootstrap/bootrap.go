@@ -35,19 +35,17 @@ func App() *fx.App {
 		),
 
 		auth.Module,
-		user.Module,
-		welcome.Module,
-		dashboard.Module,
-
-		logger.Module,
 		cache.Module,
+		dashboard.Module,
 		database.Module,
 		inertia.Module,
-		vite.Module,
-		template.Module,
-
+		logger.Module,
 		scheduler.Module,
 		server.Module,
+		template.Module,
+		user.Module,
+		vite.Module,
+		welcome.Module,
 
 		fx.WithLogger(func(log ports.Logger) fxevent.Logger {
 			return log

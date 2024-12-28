@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -79,7 +80,9 @@ func New(deps Dependencies) (Result, error) {
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
 		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
-			c.Locals("stack_trace", debugtrace.StackTrace(11))
+			if stackFrames, err := debugtrace.StackTrace(); err == nil {
+				c.Locals("stack_trace", stackFrames)
+			}
 			deps.Log.Error(fmt.Sprintf("panic: %v\n", e))
 		},
 	}))
@@ -98,9 +101,23 @@ var Module = fx.Module("server",
 			fx.ParamTags("", "", "", "", "", "", "", "", `group:"router"`, `group:"api_router"`),
 		),
 	),
-	fx.Invoke(func(app *fiber.App, config *config.App, log ports.Logger) error {
-		log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
-		return app.Listen(fmt.Sprintf(":%d", config.APP_PORT))
+	fx.Invoke(func(lx fx.Lifecycle, app *fiber.App, config *config.App, log ports.Logger) error {
+		lx.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				go func() {
+					if err := app.Listen(fmt.Sprintf(":%d", config.APP_PORT)); err != nil {
+						log.Fatal("failed to start server", "error", err)
+					}
+				}()
+				log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				return app.Shutdown()
+			},
+		})
+
+		return nil
 	}),
 )
 
