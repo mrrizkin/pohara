@@ -22,7 +22,6 @@ type Result struct {
 
 var Module = fx.Module("vite",
 	fx.Provide(New),
-
 	fx.Provide(
 		template.AsControl(func(v *Vite) *exec.ControlStructureSet {
 			return exec.NewControlStructureSet(map[string]parser.ControlStructureParser{

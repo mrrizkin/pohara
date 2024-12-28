@@ -17,6 +17,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/utils"
+	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/parser"
 	"github.com/rs/zerolog"
 
 	"github.com/mrrizkin/pohara/config"
@@ -95,6 +97,13 @@ func New(deps Dependencies) (Result, error) {
 
 var Module = fx.Module("server",
 	fx.Provide(New),
+	fx.Provide(
+		template.AsControl(func(app *fiber.App) *exec.ControlStructureSet {
+			return exec.NewControlStructureSet(map[string]parser.ControlStructureParser{
+				"ziggy": ziggyParser(app),
+			})
+		}),
+	),
 	fx.Decorate(
 		fx.Annotate(
 			setupRouter,

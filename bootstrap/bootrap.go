@@ -4,11 +4,11 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 
-	"github.com/mrrizkin/pohara/app/auth"
 	"github.com/mrrizkin/pohara/app/dashboard"
 	"github.com/mrrizkin/pohara/app/user"
 	"github.com/mrrizkin/pohara/app/welcome"
 	"github.com/mrrizkin/pohara/config"
+	"github.com/mrrizkin/pohara/internal/auth"
 	"github.com/mrrizkin/pohara/internal/common/hashing"
 	"github.com/mrrizkin/pohara/internal/common/validator"
 	"github.com/mrrizkin/pohara/internal/infrastructure/cache"
@@ -24,9 +24,12 @@ import (
 )
 
 func App() *fx.App {
-	fx.Decorate()
 	return fx.New(
-		config.New(),
+		config.Load(
+			&config.App{},
+			&config.Database{},
+			&config.Session{},
+		),
 
 		fx.Provide(
 			hashing.New,

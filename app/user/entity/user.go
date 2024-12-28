@@ -11,7 +11,7 @@ type User struct {
 	UpdatedAt sql.TimeNullable   `json:"updated_at"`
 	DeletedAt gorm.DeletedAt     `json:"deleted_at" gorm:"index"`
 	Username  sql.StringNullable `json:"username"   gorm:"unique;not null;index"`
-	Password  sql.StringNullable `json:"password"`
+	Password  sql.StringNullable `json:"-"`
 	Name      sql.StringNullable `json:"name"`
 	Email     sql.StringNullable `json:"email"`
 }

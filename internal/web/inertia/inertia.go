@@ -1,6 +1,8 @@
 package inertia
 
 import (
+	"encoding/json"
+	"fmt"
 	"html/template"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,6 +32,7 @@ type Dependencies struct {
 
 	Vite   *vite.Vite
 	Config *config.App
+	App    *fiber.App
 }
 
 // Result wraps the Inertia instance for fx dependency injection
@@ -60,7 +63,7 @@ func New(deps Dependencies) (Result, error) {
 		return Result{}, err
 	}
 
-	registerTemplateFuncs(i, deps.Vite)
+	registerTemplateFuncs(i, deps.App, deps.Vite)
 
 	return Result{
 		Inertia: &Inertia{
@@ -105,11 +108,30 @@ func buildOptions(deps Dependencies) ([]gonertia.Option, error) {
 	}, nil
 }
 
-func registerTemplateFuncs(i *gonertia.Inertia, v *vite.Vite) {
+func registerTemplateFuncs(i *gonertia.Inertia, app *fiber.App, v *vite.Vite) {
 	i.ShareTemplateFunc("reactRefresh", func() template.HTML {
 		return template.HTML(v.ReactRefresh())
 	})
 	i.ShareTemplateFunc("vite", func(input string) template.HTML {
 		return template.HTML(v.Entry(input))
+	})
+	i.ShareTemplateFunc("ziggy", func() template.HTML {
+		routeMap := make(map[string]string)
+		routesStack := app.Stack()
+		for _, routes := range routesStack {
+			for _, route := range routes {
+				if route.Name != "" {
+					routeMap[route.Name] = route.Path
+				}
+			}
+		}
+
+		data, err := json.Marshal(routeMap)
+		if err != nil {
+			data = []byte("{}")
+		}
+		return template.HTML(
+			fmt.Sprintf(`<script>function $route(name) { return %s[name] }</script>`, data),
+		)
 	})
 }

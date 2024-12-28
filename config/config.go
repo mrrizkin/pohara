@@ -4,16 +4,10 @@ import (
 	"go.uber.org/fx"
 )
 
-func New() fx.Option {
-	configs := []interface{}{
-		&App{},
-		&Database{},
-		&Session{},
-	}
-
-	for _, config := range configs {
+func Load(cfgs ...interface{}) fx.Option {
+	for _, config := range cfgs {
 		load(config)
 	}
 
-	return fx.Supply(configs...)
+	return fx.Supply(cfgs...)
 }
