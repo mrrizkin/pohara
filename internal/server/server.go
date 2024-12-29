@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/utils"
-	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/rs/zerolog"
 
 	"github.com/mrrizkin/pohara/config"
@@ -97,32 +95,6 @@ func New(deps Dependencies) (Result, error) {
 
 var Module = fx.Module("server",
 	fx.Provide(New),
-	fx.Provide(
-		template.AsCtx(func(app *fiber.App) *exec.Context {
-			return template.Directive("ziggy", func() string {
-				routeMap := make(map[string]string)
-				routesStack := app.Stack()
-				for _, routes := range routesStack {
-					for _, route := range routes {
-						if route.Name != "" {
-							routeMap[route.Name] = route.Path
-						}
-					}
-				}
-
-				data, err := json.Marshal(routeMap)
-				if err != nil {
-					data = []byte("{}")
-				}
-				return fmt.Sprintf(`<script>function $route(name) { return %s[name] }</script>`, data)
-			})
-		}),
-		template.AsCtx(func(app *fiber.App) *exec.Context {
-			return template.Directive("greet", func(name string) string {
-				return fmt.Sprintf(`hello %s`, name)
-			})
-		}),
-	),
 	fx.Decorate(setupRouter),
 	fx.Invoke(func(lx fx.Lifecycle, app *fiber.App, config *config.App, log ports.Logger) error {
 		lx.Append(fx.Hook{
