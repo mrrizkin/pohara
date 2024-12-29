@@ -2,19 +2,16 @@ package template
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/mrrizkin/pohara/config"
-	"github.com/mrrizkin/pohara/internal/common/sql"
-	"github.com/mrrizkin/pohara/internal/ports"
 	"github.com/mrrizkin/pohara/web"
 	"github.com/nikolalohinski/gonja/v2/builtins"
 	"github.com/nikolalohinski/gonja/v2/exec"
@@ -24,7 +21,6 @@ import (
 type Template struct {
 	fs     http.FileSystem
 	config *config.App
-	cache  ports.Cache
 	env    *exec.Environment
 
 	templates map[string]*exec.Template
@@ -34,7 +30,6 @@ type Dependencies struct {
 	fx.In
 
 	Config *config.App
-	Cache  ports.Cache
 }
 
 type Result struct {
@@ -45,14 +40,7 @@ type Result struct {
 
 var Module = fx.Module("template",
 	fx.Provide(New),
-	fx.Decorate(
-		fx.Annotate(setupEnv, fx.ParamTags("",
-			`group:"ctx"`,
-			`group:"filter"`,
-			`group:"test"`,
-			`group:"control"`,
-		)),
-	),
+	fx.Decorate(extendTemplate),
 	fx.Invoke(loader),
 )
 
@@ -84,6 +72,53 @@ func AsControl(f any) any {
 	)
 }
 
+// Directive creates a new global function from a given function that returns string
+func Directive(name string, fn any) *exec.Context {
+	fnType := reflect.TypeOf(fn)
+	if fnType.Kind() != reflect.Func {
+		panic("directive expects a function")
+	}
+
+	if fnType.NumOut() != 1 || fnType.Out(0).Kind() != reflect.String {
+		panic("function must return a string")
+	}
+
+	return exec.NewContext(map[string]interface{}{
+		name: func(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+			fnValue := reflect.ValueOf(fn)
+			numIn := fnType.NumIn()
+
+			if len(params.Args) != numIn {
+				return exec.AsValue(exec.ErrInvalidCall(errors.New("invalid number of arguments")))
+			}
+
+			args := make([]reflect.Value, numIn)
+			for i := 0; i < numIn; i++ {
+				arg := params.Args[i]
+				expectedType := fnType.In(i)
+
+				var value reflect.Value
+				switch expectedType.Kind() {
+				case reflect.String:
+					value = reflect.ValueOf(arg.String())
+				case reflect.Int, reflect.Int64:
+					value = reflect.ValueOf(arg.Integer())
+				case reflect.Float64:
+					value = reflect.ValueOf(arg.Float())
+				case reflect.Bool:
+					value = reflect.ValueOf(arg.Bool())
+				default:
+					return exec.AsValue(exec.ErrInvalidCall(errors.New("unsupported argument type")))
+				}
+				args[i] = value
+			}
+
+			result := fnValue.Call(args)
+			return exec.AsValue(result[0].String())
+		},
+	})
+}
+
 func New(deps Dependencies) Result {
 	fs := http.FS(web.Views)
 	env := &exec.Environment{
@@ -99,41 +134,10 @@ func New(deps Dependencies) Result {
 	return Result{
 		Template: &Template{
 			config: deps.Config,
-			cache:  deps.Cache,
 			env:    env,
 
 			fs: fs,
 		},
-	}
-}
-
-func (t *Template) cacheKey(template string, data map[string]interface{}) sql.StringNullable {
-	if !t.config.VIEW_CACHE || !t.config.IsProduction() {
-		return sql.StringNullable{
-			Valid: false,
-		}
-	}
-
-	var cacheKey string
-	var hash [16]byte
-	if data != nil {
-		encodedData, err := json.Marshal(data)
-		if err != nil {
-			return sql.StringNullable{
-				Valid: false,
-			}
-		}
-
-		hash = md5.Sum(append([]byte(template), encodedData...))
-	} else {
-		hash = md5.Sum([]byte(template))
-	}
-
-	cacheKey = hex.EncodeToString(hash[:])
-
-	return sql.StringNullable{
-		Valid:  true,
-		String: cacheKey,
 	}
 }
 
@@ -155,32 +159,37 @@ func (t *Template) Render(
 	return buf.Bytes(), nil
 }
 
-func setupEnv(
-	template *Template,
-	ctx []*exec.Context,
-	filter []*exec.FilterSet,
-	test []*exec.TestSet,
-	controlStructure []*exec.ControlStructureSet,
-) *Template {
-	for _, c := range ctx {
+type ExtendTemplateDependencies struct {
+	fx.In
+
+	Template         *Template
+	Context          []*exec.Context             `group:"ctx"`
+	Filter           []*exec.FilterSet           `group:"filter"`
+	Test             []*exec.TestSet             `group:"test"`
+	ControlStructure []*exec.ControlStructureSet `group:"control"`
+}
+
+func extendTemplate(deps ExtendTemplateDependencies) *Template {
+	template := deps.Template
+	for _, c := range deps.Context {
 		if c != nil {
 			template.env.Context.Update(c)
 		}
 	}
 
-	for _, f := range filter {
+	for _, f := range deps.Filter {
 		if f != nil {
 			template.env.Filters.Update(f)
 		}
 	}
 
-	for _, t := range test {
+	for _, t := range deps.Test {
 		if t != nil {
 			template.env.Tests.Update(t)
 		}
 	}
 
-	for _, cs := range controlStructure {
+	for _, cs := range deps.ControlStructure {
 		if cs != nil {
 			template.env.ControlStructures.Update(cs)
 		}

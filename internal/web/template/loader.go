@@ -14,19 +14,16 @@ type httpFilesystemLoader struct {
 	baseDir string
 }
 
-func newHttpFileSystemLoader(
-	httpfs http.FileSystem,
-	baseDir string,
-) (loaders.Loader, error) {
-	hfs := &httpFilesystemLoader{
-		fs:      httpfs,
+func newHttpFileSystemLoader(fs http.FileSystem, baseDir string) (loaders.Loader, error) {
+	httpFs := &httpFilesystemLoader{
+		fs:      fs,
 		baseDir: baseDir,
 	}
-	if httpfs == nil {
+	if fs == nil {
 		err := errors.New("httpfs cannot be nil")
 		return nil, err
 	}
-	return hfs, nil
+	return httpFs, nil
 }
 
 func (h *httpFilesystemLoader) Resolve(name string) (string, error) {

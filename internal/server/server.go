@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/parser"
 	"github.com/rs/zerolog"
 
 	"github.com/mrrizkin/pohara/config"
@@ -98,18 +98,32 @@ func New(deps Dependencies) (Result, error) {
 var Module = fx.Module("server",
 	fx.Provide(New),
 	fx.Provide(
-		template.AsControl(func(app *fiber.App) *exec.ControlStructureSet {
-			return exec.NewControlStructureSet(map[string]parser.ControlStructureParser{
-				"ziggy": ziggyParser(app),
+		template.AsCtx(func(app *fiber.App) *exec.Context {
+			return template.Directive("ziggy", func() string {
+				routeMap := make(map[string]string)
+				routesStack := app.Stack()
+				for _, routes := range routesStack {
+					for _, route := range routes {
+						if route.Name != "" {
+							routeMap[route.Name] = route.Path
+						}
+					}
+				}
+
+				data, err := json.Marshal(routeMap)
+				if err != nil {
+					data = []byte("{}")
+				}
+				return fmt.Sprintf(`<script>function $route(name) { return %s[name] }</script>`, data)
+			})
+		}),
+		template.AsCtx(func(app *fiber.App) *exec.Context {
+			return template.Directive("greet", func(name string) string {
+				return fmt.Sprintf(`hello %s`, name)
 			})
 		}),
 	),
-	fx.Decorate(
-		fx.Annotate(
-			setupRouter,
-			fx.ParamTags("", "", "", "", "", "", "", "", `group:"router"`, `group:"api_router"`),
-		),
-	),
+	fx.Decorate(setupRouter),
 	fx.Invoke(func(lx fx.Lifecycle, app *fiber.App, config *config.App, log ports.Logger) error {
 		lx.Append(fx.Hook{
 			OnStart: func(context.Context) error {
@@ -130,67 +144,72 @@ var Module = fx.Module("server",
 	}),
 )
 
-func setupRouter(
-	app *fiber.App,
-	session *session.Session,
-	config *config.App,
-	inertia *inertia.Inertia,
-	log ports.Logger,
-	cache ports.Cache,
-	validator *validator.Validator,
-	template *template.Template,
-	routes []WebRouter,
-	apiRoutes []ApiRouter,
-) *fiber.App {
-	app.Get("/api/v1/docs/swagger", swagger(config))
+type SetupRouterDependecies struct {
+	fx.In
 
-	(WebRouters)(routes).Register(
+	App       *fiber.App
+	Session   *session.Session
+	Config    *config.App
+	Inertia   *inertia.Inertia
+	Log       ports.Logger
+	Cache     ports.Cache
+	Validator *validator.Validator
+	Template  *template.Template
+
+	WebRoutes []WebRouter `group:"web_router"`
+	ApiRoutes []ApiRouter `group:"api_router"`
+}
+
+func setupRouter(deps SetupRouterDependecies) *fiber.App {
+	deps.App.Get("/api/v1/docs/swagger", swagger(deps.Config))
+
+	(WebRouters)(deps.WebRoutes).Register(
 		NewRouter(
-			app.Group("/",
+			deps.App.Group("/",
 				csrf.New(csrf.Config{
-					KeyLookup:         fmt.Sprintf("cookie:%s", config.CSRF_KEY),
-					CookieName:        config.CSRF_COOKIE_NAME,
-					CookieSameSite:    config.CSRF_SAME_SITE,
-					CookieSecure:      config.CSRF_SECURE,
+					KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_KEY),
+					CookieName:        deps.Config.CSRF_COOKIE_NAME,
+					CookieSameSite:    deps.Config.CSRF_SAME_SITE,
+					CookieSecure:      deps.Config.CSRF_SECURE,
 					CookieSessionOnly: true,
-					CookieHTTPOnly:    config.CSRF_HTTP_ONLY,
+					CookieHTTPOnly:    deps.Config.CSRF_HTTP_ONLY,
 					SingleUseToken:    true,
-					Expiration:        time.Duration(config.CSRF_EXPIRATION) * time.Second,
+					Expiration:        time.Duration(deps.Config.CSRF_EXPIRATION) * time.Second,
 					KeyGenerator:      utils.UUIDv4,
 					ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
-					Extractor:         csrf.CsrfFromCookie(config.CSRF_KEY),
-					Session:           session.Store,
+					Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_KEY),
+					Session:           deps.Session.Store,
 					SessionKey:        "fiber.csrf.token",
 					HandlerContextKey: "fiber.csrf.handler",
 				}),
 				cors.New(),
 				helmet.New(),
 			),
-			template,
-			inertia,
-			config,
-			cache,
-			log,
-			validator,
+			deps.Template,
+			deps.Inertia,
+			deps.Config,
+			deps.Cache,
+			deps.Log,
+			deps.Validator,
 		))
 
-	(ApiRouters)(apiRoutes).Register(
+	(ApiRouters)(deps.ApiRoutes).Register(
 		NewRouter(
-			app.Group("/api",
+			deps.App.Group("/api",
 				cors.New(cors.Config{
 					AllowOrigins: "*",
 					AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
 				}),
 			),
-			template,
-			inertia,
-			config,
-			cache,
-			log,
-			validator,
+			deps.Template,
+			deps.Inertia,
+			deps.Config,
+			deps.Cache,
+			deps.Log,
+			deps.Validator,
 		))
 
-	return app
+	return deps.App
 }
 
 func swagger(config *config.App) func(c *fiber.Ctx) error {

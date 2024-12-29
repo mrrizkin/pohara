@@ -17,5 +17,5 @@
 	],
 	"importOrderSeparation": true,
 	"importOrderSortSpecifiers": true,
-	"plugins": ["prettier-plugin-django-alpine", "@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"]
+	"plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss", "prettier-plugin-django-alpine"]
 }

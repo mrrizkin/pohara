@@ -39,7 +39,7 @@ func (wr WebRouters) Register(router *Router) {
 func AsWebRouter(f any) any {
 	return fx.Annotate(
 		f,
-		fx.ResultTags(`group:"router"`),
+		fx.ResultTags(`group:"web_router"`),
 	)
 }
 

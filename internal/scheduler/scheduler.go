@@ -29,18 +29,7 @@ func New(deps Dependencies) Result {
 
 var Module = fx.Module("scheduler",
 	fx.Provide(New),
-	fx.Decorate(
-		fx.Annotate(
-			func(scheduler *Scheduler, schedules []Schedule) *Scheduler {
-				for _, schedule := range schedules {
-					schedule.Schedule(scheduler)
-				}
-
-				return scheduler
-			},
-			fx.ParamTags("", `group:"scheduler"`),
-		),
-	),
+	fx.Decorate(loadScheduler),
 	fx.Invoke(func(scheduler *Scheduler) {
 		scheduler.Start()
 	}),
@@ -58,4 +47,19 @@ func (s *Scheduler) Add(spec string, cmd func()) {
 func (s *Scheduler) Start() {
 	s.log.Info("starting cron", "entries", len(s.Entries()))
 	s.Cron.Start()
+}
+
+type LoadSchedulerDependencies struct {
+	fx.In
+
+	Scheduler *Scheduler
+	Schedules []Schedule `group:"scheduler"`
+}
+
+func loadScheduler(deps LoadSchedulerDependencies) *Scheduler {
+	for _, schedule := range deps.Schedules {
+		schedule.Schedule(deps.Scheduler)
+	}
+
+	return deps.Scheduler
 }

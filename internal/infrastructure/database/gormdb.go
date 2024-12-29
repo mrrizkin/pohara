@@ -37,16 +37,7 @@ type GormDatabaseResult struct {
 
 var Module = fx.Module("gormdb",
 	fx.Provide(NewGormDB),
-	fx.Decorate(
-		fx.Annotate(
-			func(log ports.Logger, gormdb *GormDatabase, models []interface{}) *GormDatabase {
-				log.Info("migrating models", "count", len(models))
-				gormdb.db.AutoMigrate(models...)
-				return gormdb
-			},
-			fx.ParamTags("", "", `group:"gorm_migrate"`),
-		),
-	),
+	fx.Decorate(loadMigrationModels),
 	fx.Provide(func(db *GormDatabase) ports.Database { return db }),
 )
 
@@ -196,4 +187,18 @@ func (g *GormDatabase) Raw(dest interface{}, statement string, values ...interfa
 
 func (g *GormDatabase) Exec(statement string, values ...interface{}) error {
 	return g.db.Exec(statement, values...).Error
+}
+
+type LoadMigrationModelsDependencies struct {
+	fx.In
+
+	Log    ports.Logger
+	GormDB *GormDatabase
+	Models []interface{} `group:"gorm_migrate"`
+}
+
+func loadMigrationModels(deps LoadMigrationModelsDependencies) *GormDatabase {
+	deps.Log.Info("loading migration models", "count", len(deps.Models))
+	deps.GormDB.db.AutoMigrate(deps.Models...)
+	return deps.GormDB
 }
