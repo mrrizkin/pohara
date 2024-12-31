@@ -9,7 +9,6 @@ import (
 	"github.com/mrrizkin/pohara/internal/common/sql"
 	"github.com/mrrizkin/pohara/internal/common/validator"
 	"github.com/mrrizkin/pohara/internal/ports"
-	"github.com/mrrizkin/pohara/internal/server"
 	"go.uber.org/fx"
 )
 
@@ -55,9 +54,9 @@ func Handler(deps HandlerDependencies) HandlerResult {
 //	@Failure		400		{object}	validator.GlobalErrorResponse		"Bad request"
 //	@Failure		500		{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user [post]
-func (h *UserHandler) UserCreate(ctx *server.Ctx) error {
+func (h *UserHandler) UserCreate(ctx *fiber.Ctx) error {
 	payload := new(entity.User)
-	err := ctx.ParseBodyAndValidate(payload)
+	err := h.validator.ParseBodyAndValidate(ctx, payload)
 	if err != nil {
 		h.log.Error("failed to parse and validate payload", "error", err)
 		return err
@@ -91,7 +90,7 @@ func (h *UserHandler) UserCreate(ctx *server.Ctx) error {
 //	@Success		200			{object}	fiber.Map{data=[]entity.User,meta=fiber.Map}	"Successfully retrieved users"
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
-func (h *UserHandler) UserFindAll(ctx *server.Ctx) error {
+func (h *UserHandler) UserFindAll(ctx *fiber.Ctx) error {
 	offset := sql.Int64Nullable{
 		Valid: true,
 		Int64: int64(ctx.QueryInt("page", 1)),
@@ -136,7 +135,7 @@ func (h *UserHandler) UserFindAll(ctx *server.Ctx) error {
 //	@Failure		404	{object}	validator.GlobalErrorResponse		"User not found"
 //	@Failure		500	{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [get]
-func (h *UserHandler) UserFindByID(ctx *server.Ctx) error {
+func (h *UserHandler) UserFindByID(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		h.log.Error("failed to parse id", "err", err)
@@ -182,7 +181,7 @@ func (h *UserHandler) UserFindByID(ctx *server.Ctx) error {
 //	@Failure		400		{object}	validator.GlobalErrorResponse		"Bad request"
 //	@Failure		500		{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [put]
-func (h *UserHandler) UserUpdate(ctx *server.Ctx) error {
+func (h *UserHandler) UserUpdate(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		h.log.Error("failed to parse id", "err", err)
@@ -193,7 +192,7 @@ func (h *UserHandler) UserUpdate(ctx *server.Ctx) error {
 	}
 
 	payload := new(entity.User)
-	err = ctx.ParseBodyAndValidate(payload)
+	err = h.validator.ParseBodyAndValidate(ctx, payload)
 	if err != nil {
 		h.log.Error("failed to parse and validate payload", "error", err)
 		return err
@@ -228,7 +227,7 @@ func (h *UserHandler) UserUpdate(ctx *server.Ctx) error {
 //	@Failure		401	{object}	validator.GlobalErrorResponse	"Unauthorized"
 //	@Failure		500	{object}	validator.GlobalErrorResponse	"Internal server error"
 //	@Router			/user/{id} [delete]
-func (c *UserHandler) UserDelete(ctx *server.Ctx) error {
+func (c *UserHandler) UserDelete(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		c.log.Error("failed to parse id", "err", err)

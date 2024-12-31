@@ -136,49 +136,33 @@ func setupRouter(deps SetupRouterDependecies) *fiber.App {
 	deps.App.Get("/api/v1/docs/swagger", swagger(deps.Config))
 
 	(WebRouters)(deps.WebRoutes).Register(
-		NewRouter(
-			deps.App.Group("/",
-				csrf.New(csrf.Config{
-					KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_KEY),
-					CookieName:        deps.Config.CSRF_COOKIE_NAME,
-					CookieSameSite:    deps.Config.CSRF_SAME_SITE,
-					CookieSecure:      deps.Config.CSRF_SECURE,
-					CookieSessionOnly: true,
-					CookieHTTPOnly:    deps.Config.CSRF_HTTP_ONLY,
-					SingleUseToken:    true,
-					Expiration:        time.Duration(deps.Config.CSRF_EXPIRATION) * time.Second,
-					KeyGenerator:      utils.UUIDv4,
-					ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
-					Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_KEY),
-					Session:           deps.Session.Store,
-					SessionKey:        "fiber.csrf.token",
-					HandlerContextKey: "fiber.csrf.handler",
-				}),
-				cors.New(),
-				helmet.New(),
-			),
-			deps.Template,
-			deps.Inertia,
-			deps.Config,
-			deps.Cache,
-			deps.Log,
-			deps.Validator,
+		deps.App.Group("/",
+			csrf.New(csrf.Config{
+				KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_KEY),
+				CookieName:        deps.Config.CSRF_COOKIE_NAME,
+				CookieSameSite:    deps.Config.CSRF_SAME_SITE,
+				CookieSecure:      deps.Config.CSRF_SECURE,
+				CookieSessionOnly: true,
+				CookieHTTPOnly:    deps.Config.CSRF_HTTP_ONLY,
+				SingleUseToken:    true,
+				Expiration:        time.Duration(deps.Config.CSRF_EXPIRATION) * time.Second,
+				KeyGenerator:      utils.UUIDv4,
+				ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
+				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_KEY),
+				Session:           deps.Session.Store,
+				SessionKey:        "fiber.csrf.token",
+				HandlerContextKey: "fiber.csrf.handler",
+			}),
+			cors.New(),
+			helmet.New(),
 		))
 
 	(ApiRouters)(deps.ApiRoutes).Register(
-		NewRouter(
-			deps.App.Group("/api",
-				cors.New(cors.Config{
-					AllowOrigins: "*",
-					AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
-				}),
-			),
-			deps.Template,
-			deps.Inertia,
-			deps.Config,
-			deps.Cache,
-			deps.Log,
-			deps.Validator,
+		deps.App.Group("/api",
+			cors.New(cors.Config{
+				AllowOrigins: "*",
+				AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
+			}),
 		))
 
 	return deps.App

@@ -2,14 +2,22 @@ package template
 
 import (
 	"bytes"
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/config"
+	"github.com/mrrizkin/pohara/internal/common/sql"
+	"github.com/mrrizkin/pohara/internal/ports"
 	"github.com/mrrizkin/pohara/web"
 	"github.com/nikolalohinski/gonja/v2/builtins"
 	"github.com/nikolalohinski/gonja/v2/exec"
@@ -19,6 +27,8 @@ import (
 type Template struct {
 	fs     http.FileSystem
 	config *config.App
+	cache  ports.Cache
+	log    ports.Logger
 	env    *exec.Environment
 
 	templates map[string]*exec.Template
@@ -28,6 +38,8 @@ type Dependencies struct {
 	fx.In
 
 	Config *config.App
+	Cache  ports.Cache
+	Log    ports.Logger
 }
 
 type Result struct {
@@ -86,6 +98,8 @@ func New(deps Dependencies) Result {
 		Template: &Template{
 			config: deps.Config,
 			env:    env,
+			cache:  deps.Cache,
+			log:    deps.Log,
 
 			fs: fs,
 		},
@@ -93,21 +107,40 @@ func New(deps Dependencies) Result {
 }
 
 func (t *Template) Render(
+	c *fiber.Ctx,
 	template string,
 	data map[string]interface{},
-) ([]byte, error) {
+) error {
+	cacheKey := t.cacheKey(template, data)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if cacheKey.Valid {
+		if value, ok := t.cache.Get(ctx, cacheKey.String); ok {
+			if html, ok := value.([]byte); ok {
+				return c.Type("html").Send(html)
+			}
+
+			t.log.Warn("cached template invalid type", "template", template)
+		}
+	}
+
 	var buf bytes.Buffer
 	tmpl, ok := t.templates[template]
 	if !ok {
-		return nil, fmt.Errorf("template %s not found", template)
+		return fmt.Errorf("template %s not found", template)
 	}
 
 	err := tmpl.Execute(&buf, exec.NewContext(data))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf.Bytes(), nil
+	html := buf.Bytes()
+	if t.config.IsCacheView() && cacheKey.Valid {
+		t.cache.Set(ctx, cacheKey.String, html)
+	}
+
+	return c.Type("html").Send(html)
 }
 
 type ExtendTemplateDependencies struct {
@@ -208,4 +241,34 @@ func loader(t *Template) error {
 	t.templates = templates
 
 	return nil
+}
+
+func (t *Template) cacheKey(template string, data map[string]interface{}) sql.StringNullable {
+	if !t.config.IsCacheView() {
+		return sql.StringNullable{
+			Valid: false,
+		}
+	}
+
+	var cacheKey string
+	var hash [16]byte
+	if data != nil {
+		encodedData, err := json.Marshal(data)
+		if err != nil {
+			return sql.StringNullable{
+				Valid: false,
+			}
+		}
+
+		hash = md5.Sum(append([]byte(template), encodedData...))
+	} else {
+		hash = md5.Sum([]byte(template))
+	}
+
+	cacheKey = hex.EncodeToString(hash[:])
+
+	return sql.StringNullable{
+		Valid:  true,
+		String: cacheKey,
+	}
 }

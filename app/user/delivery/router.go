@@ -1,11 +1,12 @@
 package delivery
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/internal/server"
 )
 
 func ApiRouter(h *UserHandler) server.ApiRouter {
-	return server.NewApiRouter("v1", "/user", func(r *server.Router) {
+	return server.NewApiRouter("v1", "/user", func(r fiber.Router) {
 		r.Get("/", h.UserFindAll).Name("index")
 		r.Get("/:id", h.UserFindByID).Name("show")
 		r.Post("/", h.UserCreate).Name("create")

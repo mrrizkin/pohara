@@ -79,3 +79,20 @@ func (v *Validator) Format(errs []ErrorResponse) []string {
 	}
 	return errorMessages
 }
+
+func (v *Validator) ParseBodyAndValidate(ctx *fiber.Ctx, out interface{}) error {
+	err := ctx.BodyParser(out)
+	if err != nil {
+		return &fiber.Error{
+			Code:    400,
+			Message: "payload not valid",
+		}
+	}
+
+	err = v.MustValidate(out)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
