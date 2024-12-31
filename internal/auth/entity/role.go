@@ -14,3 +14,7 @@ type Role struct {
 	Description string           `json:"description"`
 	Policies    []Policy         `json:"policies"    gorm:"foreignKey:RoleID"`
 }
+
+func (r *Role) Can(permission string) bool {
+	return false
+}
