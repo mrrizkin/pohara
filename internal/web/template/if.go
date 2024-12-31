@@ -49,9 +49,15 @@ func newIf(name string, fn any) *exec.ControlStructureSet {
 			for _, argType := range argsType {
 				switch argType.Kind() {
 				case reflect.String:
-					i.params[index] = append(i.params[index], args.Match(tokens.Name, tokens.String))
+					i.params[index] = append(
+						i.params[index],
+						args.Match(tokens.Name, tokens.String),
+					)
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					i.params[index] = append(i.params[index], args.Match(tokens.Name, tokens.Integer))
+					i.params[index] = append(
+						i.params[index],
+						args.Match(tokens.Name, tokens.Integer),
+					)
 				case reflect.Float64, reflect.Float32:
 					i.params[index] = append(i.params[index], args.Match(tokens.Name, tokens.Float))
 				default:
@@ -60,7 +66,10 @@ func newIf(name string, fn any) *exec.ControlStructureSet {
 			}
 
 			if !args.End() {
-				return nil, args.Error(fmt.Sprintf("Malformed %s controlStructure args.", name), nil)
+				return nil, args.Error(
+					fmt.Sprintf("Malformed %s controlStructure args.", name),
+					nil,
+				)
 			}
 
 			index++
@@ -84,18 +93,32 @@ func newIf(name string, fn any) *exec.ControlStructureSet {
 					for _, argType := range argsType {
 						switch argType.Kind() {
 						case reflect.String:
-							i.params[index] = append(i.params[index], tagArgs.Match(tokens.Name, tokens.String))
+							i.params[index] = append(
+								i.params[index],
+								tagArgs.Match(tokens.Name, tokens.String),
+							)
 						case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-							i.params[index] = append(i.params[index], tagArgs.Match(tokens.Name, tokens.Integer))
+							i.params[index] = append(
+								i.params[index],
+								tagArgs.Match(tokens.Name, tokens.Integer),
+							)
 						case reflect.Float64, reflect.Float32:
-							i.params[index] = append(i.params[index], tagArgs.Match(tokens.Name, tokens.Float))
+							i.params[index] = append(
+								i.params[index],
+								tagArgs.Match(tokens.Name, tokens.Float),
+							)
 						default:
-							panic(fmt.Sprintf("function argument %s, not supported", argType.Kind()))
+							panic(
+								fmt.Sprintf("function argument %s, not supported", argType.Kind()),
+							)
 						}
 					}
 
 					if !tagArgs.End() {
-						return nil, tagArgs.Error(fmt.Sprintf("else%s-condition is malformed.", name), nil)
+						return nil, tagArgs.Error(
+							fmt.Sprintf("else%s-condition is malformed.", name),
+							nil,
+						)
 					}
 					index++
 				} else {
@@ -140,7 +163,7 @@ func (i *ifncs) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) erro
 				case tokens.Name:
 					val, exist := r.Environment.Context.Get(arg.Val)
 					if !exist {
-						return fmt.Errorf("Variable '%s' not found in context.", arg.Val)
+						return fmt.Errorf("variable '%s' not found in context", arg.Val)
 					}
 
 					args[j] = reflect.ValueOf(val)

@@ -7,5 +7,5 @@ type Option struct {
 
 var (
 	Directive = newDirective
-	If        = newIf
+	CustomIf  = newIf
 )

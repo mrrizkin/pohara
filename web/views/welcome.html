@@ -190,15 +190,11 @@
 				font-size: 0.9rem;
 			}
 		</style>
-		{{ ziggy() }}
 	</head>
 	<body>
 		<nav class="nav">
 			<div class="nav-container">
-				<h1 class="nav-logo">
-					Pohara
-					{{ greet("World") }}
-				</h1>
+				<h1 class="nav-logo">Pohara</h1>
 				<div class="nav-links">
 					<a href="/docs" class="nav-link">Documentation</a>
 					<a href="https://github.com/mrrizkin/pohara" class="nav-link">GitHub</a>
@@ -265,8 +261,8 @@
 
 					document.body.style.background = `
                     linear-gradient(
-                        ${135 + mouseX * 30}deg, 
-                        #0f172a ${mouseY * 10}%, 
+                        ${135 + mouseX * 30}deg,
+                        #0f172a ${mouseY * 10}%,
                         #1e293b ${100 - mouseY * 10}%
                     )
                 `;
