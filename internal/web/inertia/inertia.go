@@ -1,9 +1,11 @@
 package inertia
 
 import (
-	"encoding/json"
-	"fmt"
-	"html/template"
+	"crypto/md5"
+	"encoding/hex"
+	"math/rand"
+	"os"
+	"reflect"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -11,28 +13,20 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/config"
-	"github.com/mrrizkin/pohara/internal/web/vite"
 	"github.com/mrrizkin/pohara/web"
-)
-
-// Constants
-const (
-	defaultTemplatePath = "inertia/index.html"
 )
 
 // Inertia wraps gonertia.Inertia with additional Vite integration
 type Inertia struct {
 	core *gonertia.Inertia
-	vite *vite.Vite
 }
 
 // Dependencies defines the required dependencies for Inertia
 type Dependencies struct {
 	fx.In
 
-	Vite   *vite.Vite
-	Config *config.App
-	App    *fiber.App
+	Config        *config.App
+	InertiaConfig *config.Inertia
 }
 
 // Result wraps the Inertia instance for fx dependency injection
@@ -44,16 +38,27 @@ type Result struct {
 
 var Module = fx.Module("inertia",
 	fx.Provide(New),
+	fx.Decorate(extendInertia),
+	fx.Invoke(func(*Inertia) {}),
 )
 
 // New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (Result, error) {
-	options, err := buildOptions(deps)
-	if err != nil {
-		return Result{}, err
+	options := make([]gonertia.Option, 0)
+
+	if deps.InertiaConfig.CONTAINER_ID != "" {
+		options = append(options, gonertia.WithContainerID(deps.InertiaConfig.CONTAINER_ID))
 	}
 
-	r, err := web.InertiaRoot.Open(defaultTemplatePath)
+	if deps.InertiaConfig.MANIFEST_PATH != "" {
+		options = append(options, gonertia.WithVersion(getVersionFromManifest(deps.InertiaConfig.MANIFEST_PATH)))
+	}
+
+	if deps.InertiaConfig.ENCRYPT_HISTORY {
+		options = append(options, gonertia.WithEncryptHistory(deps.InertiaConfig.ENCRYPT_HISTORY))
+	}
+
+	r, err := web.InertiaRoot.Open(deps.InertiaConfig.ENTRY_PATH)
 	if err != nil {
 		return Result{}, err
 	}
@@ -63,14 +68,35 @@ func New(deps Dependencies) (Result, error) {
 		return Result{}, err
 	}
 
-	registerTemplateFuncs(i, deps.App, deps.Vite)
-
 	return Result{
 		Inertia: &Inertia{
 			core: i,
-			vite: deps.Vite,
 		},
 	}, nil
+}
+
+func getVersionFromManifest(path string) string {
+	// Try to open and read the file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		// If file doesn't exist, generate random string
+		return randString(16)
+	}
+
+	// Create MD5 hash
+	hash := md5.New()
+	hash.Write(data)
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// Helper function to generate random string
+func randString(n int) string {
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
 
 // Middleware provides Inertia middleware for Fiber
@@ -86,52 +112,88 @@ func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Pro
 	}
 
 	w := newResponseWriter()
-	i.core.Render(w, r, component, props...)
+	if err := i.core.Render(w, r, component, props...); err != nil {
+		return err
+	}
 
 	return writeResponse(ctx, w)
 }
 
-// Private helper functions
+type ExtendResult struct {
+	fx.Out
 
-func buildOptions(deps Dependencies) ([]gonertia.Option, error) {
-	if !deps.Config.IsProduction() {
-		return nil, nil
-	}
-
-	manifestContent, err := deps.Vite.Content()
-	if err != nil {
-		return nil, err
-	}
-
-	return []gonertia.Option{
-		gonertia.WithVersion(string(manifestContent)),
-	}, nil
+	ShareTemplateFunc map[string]interface{} `group:"inertia_template_func"`
+	ShareProp         map[string]interface{} `group:"inertia_prop"`
 }
 
-func registerTemplateFuncs(i *gonertia.Inertia, app *fiber.App, v *vite.Vite) {
-	i.ShareTemplateFunc("reactRefresh", func() template.HTML {
-		return template.HTML(v.ReactRefresh())
-	})
-	i.ShareTemplateFunc("vite", func(input string) template.HTML {
-		return template.HTML(v.Entry(input))
-	})
-	i.ShareTemplateFunc("ziggy", func() template.HTML {
-		routeMap := make(map[string]string)
-		routesStack := app.Stack()
-		for _, routes := range routesStack {
-			for _, route := range routes {
-				if route.Name != "" {
-					routeMap[route.Name] = route.Path
-				}
-			}
-		}
+func Extend(fn any) any {
+	fnType := reflect.TypeOf(fn)
+	if fnType.Kind() != reflect.Func {
+		panic("extend expects a function")
+	}
 
-		data, err := json.Marshal(routeMap)
-		if err != nil {
-			data = []byte("{}")
+	// Validate that the function returns exactly one value
+	if fnType.NumOut() != 1 {
+		panic("function must return 1 thing")
+	}
+
+	// Validate that the return value is a struct
+	if fnType.Out(0).Kind() != reflect.Struct {
+		panic("function must return a struct")
+	}
+
+	// Validate that the return type matches ExtendResult
+	expectedType := reflect.TypeOf(ExtendResult{})
+	if !fnType.Out(0).AssignableTo(expectedType) {
+		panic("function must return ExtendResult")
+	}
+
+	return fn
+}
+
+func NewExtend(data map[string]interface{}) ExtendResult {
+	templateFunc := make(map[string]interface{})
+	prop := make(map[string]interface{})
+
+	for key, value := range data {
+		// Check if the value is a function using reflection
+		valueType := reflect.TypeOf(value)
+		if valueType != nil && valueType.Kind() == reflect.Func {
+			templateFunc[key] = value
+			continue
 		}
-		return template.HTML(
-			fmt.Sprintf(`<script>function $route(name) { return %s[name] }</script>`, data),
-		)
-	})
+		// If not a function, add to props
+		prop[key] = value
+	}
+
+	return ExtendResult{
+		ShareTemplateFunc: templateFunc,
+		ShareProp:         prop,
+	}
+}
+
+type ExtendInertiaDependencies struct {
+	fx.In
+
+	Inertia           *Inertia
+	ShareTemplateFunc []map[string]interface{} `group:"inertia_template_func"`
+	ShareProp         []map[string]interface{} `group:"inertia_prop"`
+}
+
+func extendInertia(deps ExtendInertiaDependencies) *Inertia {
+	inertia := deps.Inertia
+
+	for _, fns := range deps.ShareTemplateFunc {
+		for name, fn := range fns {
+			inertia.core.ShareTemplateFunc(name, fn)
+		}
+	}
+
+	for _, props := range deps.ShareProp {
+		for name, prop := range props {
+			inertia.core.ShareProp(name, prop)
+		}
+	}
+
+	return inertia
 }

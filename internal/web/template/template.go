@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/mrrizkin/pohara/web"
 	"github.com/nikolalohinski/gonja/v2/builtins"
 	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/parser"
 	"go.uber.org/fx"
 )
 
@@ -54,32 +56,74 @@ var Module = fx.Module("template",
 	fx.Invoke(loader),
 )
 
-func AsCtx(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"ctx"`),
-	)
+type ExtendResult struct {
+	fx.Out
+
+	Context          *exec.Context             `group:"ctx"`
+	Filter           *exec.FilterSet           `group:"filter"`
+	Test             *exec.TestSet             `group:"test"`
+	ControlStructure *exec.ControlStructureSet `group:"control"`
 }
 
-func AsFilter(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"filter"`),
-	)
+func Extend(fn any) any {
+	fnType := reflect.TypeOf(fn)
+	if fnType.Kind() != reflect.Func {
+		panic("extend expects a function")
+	}
+
+	// Validate that the function returns exactly one value
+	if fnType.NumOut() != 1 {
+		panic("function must return 1 thing")
+	}
+
+	// Validate that the return value is a struct
+	if fnType.Out(0).Kind() != reflect.Struct {
+		panic("function must return a struct")
+	}
+
+	// Validate that the return type matches ExtendResult
+	expectedType := reflect.TypeOf(ExtendResult{})
+	if !fnType.Out(0).AssignableTo(expectedType) {
+		panic("function must return ExtendResult")
+	}
+
+	return fn
 }
 
-func AsTest(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"test"`),
-	)
-}
+func NewExtend(data map[string]interface{}) ExtendResult {
+	ctx := make(map[string]interface{})
+	control := make(map[string]parser.ControlStructureParser)
+	filter := make(map[string]exec.FilterFunction)
+	test := make(map[string]exec.TestFunction)
 
-func AsControl(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"control"`),
-	)
+	for key, value := range data {
+		// test if the value is a parser.ControlStructureParser
+		if cs, ok := value.(parser.ControlStructureParser); ok {
+			control[key] = cs
+			continue
+		}
+
+		// test if the value is a exec.FilterFunction
+		if f, ok := value.(exec.FilterFunction); ok {
+			filter[key] = f
+			continue
+		}
+
+		// test if the value is a exec.TestFunction
+		if t, ok := value.(exec.TestFunction); ok {
+			test[key] = t
+			continue
+		}
+
+		ctx[key] = value
+	}
+
+	return ExtendResult{
+		Context:          exec.NewContext(ctx),
+		Filter:           exec.NewFilterSet(filter),
+		Test:             exec.NewTestSet(test),
+		ControlStructure: exec.NewControlStructureSet(control),
+	}
 }
 
 func New(deps Dependencies) Result {

@@ -15,7 +15,11 @@ var Module = fx.Module("auth",
 		server.AsWebRouter(delivery.WebRouter),
 		server.AsApiRouter(delivery.ApiRouter),
 
-		template.AsControl(Can),
+		template.Extend(func() template.ExtendResult {
+			return template.NewExtend(map[string]interface{}{
+				"can": template.CustomIf("can", Can),
+			})
+		}),
 
 		database.AsGormMigration(&entity.Role{}),
 		database.AsGormMigration(&entity.Policy{}),

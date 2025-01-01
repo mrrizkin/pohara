@@ -2,11 +2,11 @@ package vite
 
 import (
 	"encoding/json"
+	stdTempl "html/template"
 
 	goviteparser "github.com/mrrizkin/go-vite-parser"
+	"github.com/mrrizkin/pohara/internal/web/inertia"
 	"github.com/mrrizkin/pohara/internal/web/template"
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/parser"
 	"go.uber.org/fx"
 )
 
@@ -23,10 +23,20 @@ type Result struct {
 var Module = fx.Module("vite",
 	fx.Provide(New),
 	fx.Provide(
-		template.AsControl(func(v *Vite) *exec.ControlStructureSet {
-			return exec.NewControlStructureSet(map[string]parser.ControlStructureParser{
-				"vite":         viteParser(v),
-				"reactRefresh": reactRefreshParser(v),
+		template.Extend(func(v *Vite) template.ExtendResult {
+			return template.NewExtend(map[string]interface{}{
+				"vite":         v.Entry,
+				"reactRefresh": v.ReactRefresh,
+			})
+		}),
+		inertia.Extend(func(v *Vite) inertia.ExtendResult {
+			return inertia.NewExtend(map[string]interface{}{
+				"vite": func(input string) stdTempl.HTML {
+					return stdTempl.HTML(v.Entry(input))
+				},
+				"reactRefresh": func() stdTempl.HTML {
+					return stdTempl.HTML(v.ReactRefresh())
+				},
 			})
 		}),
 	),

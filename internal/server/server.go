@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	stdTempl "html/template"
 	"time"
 
 	"go.uber.org/fx"
@@ -95,6 +97,18 @@ func New(deps Dependencies) (Result, error) {
 
 var Module = fx.Module("server",
 	fx.Provide(New),
+	fx.Provide(
+		inertia.Extend(func(app *fiber.App) inertia.ExtendResult {
+			return inertia.NewExtend(Map{
+				"ziggy": func() stdTempl.HTML { return stdTempl.HTML(ziggy(app)) },
+			})
+		}),
+		template.Extend(func(app *fiber.App) template.ExtendResult {
+			return template.NewExtend(Map{
+				"ziggy": ziggy(app),
+			})
+		}),
+	),
 	fx.Decorate(setupRouter),
 	fx.Invoke(func(lx fx.Lifecycle, app *fiber.App, config *config.App, log ports.Logger) error {
 		lx.Append(fx.Hook{
@@ -192,4 +206,23 @@ func swagger(config *config.App) func(c *fiber.Ctx) error {
 
 		return c.Type("html").Send([]byte(html))
 	}
+}
+
+func ziggy(app *fiber.App) string {
+	routeMap := make(map[string]string)
+	routesStack := app.Stack()
+	for _, routes := range routesStack {
+		for _, route := range routes {
+			if route.Name != "" {
+				routeMap[route.Name] = route.Path
+			}
+		}
+	}
+
+	data, err := json.Marshal(routeMap)
+	if err != nil {
+		data = []byte("{}")
+	}
+
+	return fmt.Sprintf(`<script>function $route(name) { return %s[name] }</script>`, data)
 }

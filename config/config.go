@@ -6,7 +6,10 @@ import (
 
 func Load(cfgs ...interface{}) fx.Option {
 	for _, config := range cfgs {
-		load(config)
+		err := load(config)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return fx.Supply(cfgs...)

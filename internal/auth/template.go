@@ -1,13 +1,7 @@
 package auth
 
-import (
-	"github.com/mrrizkin/pohara/internal/auth/entity"
-	"github.com/mrrizkin/pohara/internal/web/template"
-	"github.com/nikolalohinski/gonja/v2/exec"
-)
+import "github.com/mrrizkin/pohara/internal/auth/entity"
 
-func Can() *exec.ControlStructureSet {
-	return template.CustomIf("can", func(role entity.Role, permission string) bool {
-		return role.Can(permission)
-	})
+func Can(role entity.Role, permission string) bool {
+	return role.Can(permission)
 }

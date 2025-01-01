@@ -29,6 +29,7 @@ func App() *fx.App {
 			&config.App{},
 			&config.Database{},
 			&config.Session{},
+			&config.Inertia{},
 		),
 
 		fx.Provide(
