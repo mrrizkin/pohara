@@ -20,7 +20,7 @@ func writeResponse(ctx *fiber.Ctx, w *responseWriter) error {
 		}
 	}
 
-	return ctx.Type("html").Status(w.StatusCode()).Send(w.Body())
+	return ctx.Status(w.StatusCode()).Send(w.Body())
 }
 
 // responseWriter implementation

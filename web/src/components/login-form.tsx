@@ -1,3 +1,5 @@
+import { router } from "@inertiajs/react";
+
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +31,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 								</div>
 								<Input id="password" type="password" required />
 							</div>
-							<Button type="submit" className="w-full">
+							<Button type="submit" className="w-full" onClick={() => router.visit($route("dashboard.index"))}>
 								Login
 							</Button>
 							<div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">

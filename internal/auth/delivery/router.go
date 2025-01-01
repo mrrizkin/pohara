@@ -3,11 +3,12 @@ package delivery
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/internal/server"
+	"github.com/mrrizkin/pohara/internal/web/inertia"
 )
 
-func WebRouter(h *AuthHandler) server.WebRouter {
+func WebRouter(h *AuthHandler, i *inertia.Inertia) server.WebRouter {
 	return server.NewWebRouter("/_/auth", func(r fiber.Router) {
-		r.Get("/login", h.LoginPage).Name("login")
+		r.Get("/login", i.Middleware(h.LoginPage)).Name("login")
 	}, "auth.")
 }
 

@@ -1,6 +1,7 @@
 package inertia
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"math/rand"
@@ -99,16 +100,52 @@ func randString(n int) string {
 	return string(b)
 }
 
+// EncryptHistory enables history encryption
+func (i *Inertia) EncryptHistory(ctx *fiber.Ctx) error {
+	c, ok := ctx.Locals("inertia_context").(context.Context)
+	if !ok {
+		r, err := adaptor.ConvertRequest(ctx, true)
+		if err != nil {
+			return err
+		}
+		c = r.Context()
+	}
+
+	c = gonertia.SetEncryptHistory(c)
+	ctx.Locals("inertia_context", c)
+	return nil
+}
+
 // Middleware provides Inertia middleware for Fiber
 func (i *Inertia) Middleware(h fiber.Handler) fiber.Handler {
 	return adaptor.HTTPHandler(i.core.Middleware(adaptor.FiberHandler(h)))
 }
 
-// Render renders an Inertia component with the given props
-func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
-	r, err := adaptor.ConvertRequest(ctx, false)
+// Redirect redirects to the given URL
+func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status int) error {
+	r, err := adaptor.ConvertRequest(ctx, true)
 	if err != nil {
 		return err
+	}
+
+	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
+		r.WithContext(c)
+	}
+
+	w := newResponseWriter()
+	i.core.Redirect(w, r, url, status)
+	return writeResponse(ctx, w)
+}
+
+// Render renders an Inertia component with the given props
+func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
+	r, err := adaptor.ConvertRequest(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
+		r.WithContext(c)
 	}
 
 	w := newResponseWriter()
@@ -116,7 +153,7 @@ func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Pro
 		return err
 	}
 
-	return writeResponse(ctx, w)
+	return writeResponse(ctx.Type("html"), w)
 }
 
 type ExtendResult struct {

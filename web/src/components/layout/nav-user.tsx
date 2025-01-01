@@ -1,3 +1,4 @@
+import { router } from "@inertiajs/react";
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -76,7 +77,7 @@ export function NavUser({
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem>
+						<DropdownMenuItem onSelect={() => router.visit($route("auth.login"))}>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>
