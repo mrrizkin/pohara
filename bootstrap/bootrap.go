@@ -5,6 +5,8 @@ import (
 	"go.uber.org/fx/fxevent"
 
 	"github.com/mrrizkin/pohara/app/dashboard"
+	"github.com/mrrizkin/pohara/app/errors"
+	"github.com/mrrizkin/pohara/app/settings"
 	"github.com/mrrizkin/pohara/app/user"
 	"github.com/mrrizkin/pohara/app/welcome"
 	"github.com/mrrizkin/pohara/config"
@@ -38,7 +40,9 @@ func App() *fx.App {
 			validator.New,
 		),
 
+		errors.Module,
 		auth.Module,
+		settings.Module,
 		cache.Module,
 		dashboard.Module,
 		database.Module,
