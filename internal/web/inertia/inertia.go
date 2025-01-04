@@ -137,6 +137,38 @@ func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status int) error {
 	return writeResponse(ctx, w)
 }
 
+// Location redirect to the given external URL
+func (i *Inertia) Location(ctx *fiber.Ctx, url string) error {
+	r, err := adaptor.ConvertRequest(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
+		r.WithContext(c)
+	}
+
+	w := newResponseWriter()
+	i.core.Location(w, r, url)
+	return writeResponse(ctx, w)
+}
+
+// Back redirects to the previous URL
+func (i *Inertia) Back(ctx *fiber.Ctx) error {
+	r, err := adaptor.ConvertRequest(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
+		r.WithContext(c)
+	}
+
+	w := newResponseWriter()
+	i.core.Back(w, r)
+	return writeResponse(ctx, w)
+}
+
 // Render renders an Inertia component with the given props
 func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
 	r, err := adaptor.ConvertRequest(ctx, true)
