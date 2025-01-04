@@ -8,7 +8,7 @@ type Pagination struct {
 	Sort   sql.StringNullable
 }
 
-type FindAllResult struct {
+type FindResult struct {
 	Data      interface{}
 	Total     int64
 	TotalPage sql.Int64Nullable
@@ -17,9 +17,11 @@ type FindAllResult struct {
 }
 
 type Database interface {
+	GetDB() interface{}
 	Create(value interface{}) error
 	First(dest interface{}, conds ...interface{}) error
-	FindAll(dest interface{}, p Pagination, conds ...interface{}) (*FindAllResult, error)
+	FindAll(dest interface{}, conds ...interface{}) error
+	Find(dest interface{}, p Pagination, conds ...interface{}) (*FindResult, error)
 	Count(model interface{}, conds ...interface{}) (int64, error)
 	Save(value interface{}) error
 	Delete(value interface{}, conds ...interface{}) error

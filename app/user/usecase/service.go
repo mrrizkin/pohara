@@ -61,8 +61,8 @@ func (s *UserService) Create(user *entity.User) (*entity.User, error) {
 	return user, nil
 }
 
-func (s *UserService) FindAll(offset, limit sql.Int64Nullable) (*ports.FindAllResult, error) {
-	return s.repo.FindAll(offset, limit)
+func (s *UserService) Find(offset, limit sql.Int64Nullable) (*ports.FindResult, error) {
+	return s.repo.Find(offset, limit)
 }
 
 func (s *UserService) FindByID(id uint) (*entity.User, error) {

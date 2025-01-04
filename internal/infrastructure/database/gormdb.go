@@ -86,6 +86,10 @@ func NewGormDB(
 	}, nil
 }
 
+func (g *GormDatabase) GetDB() interface{} {
+	return g.db
+}
+
 func (g *GormDatabase) Create(value interface{}) error {
 	return g.db.Create(value).Error
 }
@@ -94,7 +98,7 @@ func (g *GormDatabase) First(dest interface{}, conds ...interface{}) error {
 	return g.db.First(dest, conds...).Error
 }
 
-func (g *GormDatabase) Find(dest interface{}, conds ...interface{}) error {
+func (g *GormDatabase) FindAll(dest interface{}, conds ...interface{}) error {
 	return g.db.Find(dest, conds...).Error
 }
 
@@ -106,11 +110,11 @@ func (g *GormDatabase) Delete(value interface{}, conds ...interface{}) error {
 	return g.db.Delete(value, conds...).Error
 }
 
-func (g *GormDatabase) FindAll(
+func (g *GormDatabase) Find(
 	dest interface{},
 	p ports.Pagination,
 	conds ...interface{},
-) (*ports.FindAllResult, error) {
+) (*ports.FindResult, error) {
 	var total int64
 	query := g.db.Model(dest)
 
@@ -154,7 +158,7 @@ func (g *GormDatabase) FindAll(
 		totalPage.Int64 = int64(math.Ceil(float64(p.Offset.Int64)/float64(p.Limit.Int64))) + 1
 	}
 
-	return &ports.FindAllResult{
+	return &ports.FindResult{
 		Data:      dest,
 		Total:     total,
 		TotalPage: totalPage,

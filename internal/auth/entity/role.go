@@ -12,9 +12,8 @@ type Role struct {
 	DeletedAt   gorm.DeletedAt   `json:"deleted_at"  gorm:"index"`
 	Name        string           `json:"name"`
 	Description string           `json:"description"`
-	Policies    []Policy         `json:"policies"    gorm:"foreignKey:RoleID"`
 }
 
-func (r *Role) Can(permission string) bool {
-	return false
+func (Role) TableName() string {
+	return "m_roles"
 }

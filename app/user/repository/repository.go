@@ -35,17 +35,13 @@ func (r *UserRepository) Create(user *entity.User) error {
 	return r.db.Create(user)
 }
 
-func (r *UserRepository) FindAll(offset, limit sql.Int64Nullable) (*ports.FindAllResult, error) {
+func (r *UserRepository) Find(offset, limit sql.Int64Nullable) (*ports.FindResult, error) {
 	var users []entity.User
-	result, err := r.db.FindAll(&users, ports.Pagination{
+	result, err := r.db.Find(&users, ports.Pagination{
 		Limit:  limit,
 		Offset: offset,
 	})
 	return result, err
-}
-
-func (r *UserRepository) FindAllCount() (int64, error) {
-	return r.db.Count(&entity.User{})
 }
 
 func (r *UserRepository) FindByID(id uint) (*entity.User, error) {

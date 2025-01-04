@@ -78,7 +78,7 @@ func (h *UserHandler) UserCreate(ctx *fiber.Ctx) error {
 	})
 }
 
-// UserFindAll godoc
+// UserFind godoc
 //
 //	@Summary		Get all users
 //	@Description	Retrieve a list of all users with pagination
@@ -90,7 +90,7 @@ func (h *UserHandler) UserCreate(ctx *fiber.Ctx) error {
 //	@Success		200			{object}	fiber.Map{data=[]entity.User,meta=fiber.Map}	"Successfully retrieved users"
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
-func (h *UserHandler) UserFindAll(ctx *fiber.Ctx) error {
+func (h *UserHandler) UserFind(ctx *fiber.Ctx) error {
 	offset := sql.Int64Nullable{
 		Valid: true,
 		Int64: int64(ctx.QueryInt("page", 1)),
@@ -100,7 +100,7 @@ func (h *UserHandler) UserFindAll(ctx *fiber.Ctx) error {
 		Int64: int64(ctx.QueryInt("limit", 10)),
 	}
 
-	result, err := h.userService.FindAll(offset, limit)
+	result, err := h.userService.Find(offset, limit)
 	if err != nil {
 		h.log.Error("failed to get users", "err", err)
 		return &fiber.Error{
