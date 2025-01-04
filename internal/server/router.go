@@ -29,7 +29,17 @@ func NewWebRouter(prefix string, router func(fiber.Router), names ...string) Web
 type WebRouters []WebRouter
 
 func (wr WebRouters) Register(router fiber.Router) {
+	globRouters := []WebRouter{}
 	for _, r := range wr {
+		if r.prefix == "*" {
+			globRouters = append(globRouters, r)
+			continue
+		}
+
+		router.Route(r.prefix, r.router, r.name...)
+	}
+
+	for _, r := range globRouters {
 		router.Route(r.prefix, r.router, r.name...)
 	}
 }

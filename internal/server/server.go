@@ -149,6 +149,14 @@ type SetupRouterDependecies struct {
 func setupRouter(deps SetupRouterDependecies) *fiber.App {
 	deps.App.Get("/api/v1/docs/swagger", swagger(deps.Config))
 
+	(ApiRouters)(deps.ApiRoutes).Register(
+		deps.App.Group("/api",
+			cors.New(cors.Config{
+				AllowOrigins: "*",
+				AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
+			}),
+		))
+
 	(WebRouters)(deps.WebRoutes).Register(
 		deps.App.Group("/",
 			csrf.New(csrf.Config{
@@ -169,14 +177,6 @@ func setupRouter(deps SetupRouterDependecies) *fiber.App {
 			}),
 			cors.New(),
 			helmet.New(),
-		))
-
-	(ApiRouters)(deps.ApiRoutes).Register(
-		deps.App.Group("/api",
-			cors.New(cors.Config{
-				AllowOrigins: "*",
-				AllowHeaders: "Origin, Content-Type, Accept, pohara-api-token",
-			}),
 		))
 
 	return deps.App
