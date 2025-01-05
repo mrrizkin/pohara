@@ -8,6 +8,14 @@ import (
 
 type ByteNullable sql.NullByte
 
+func Byte(b byte) ByteNullable {
+	return ByteNullable{Valid: true, Byte: b}
+}
+
+func ByteNull() ByteNullable {
+	return ByteNullable{Valid: false}
+}
+
 // Scan implements the Scanner interface.
 func (n *ByteNullable) Scan(value interface{}) error {
 	return (*sql.NullByte)(n).Scan(value)

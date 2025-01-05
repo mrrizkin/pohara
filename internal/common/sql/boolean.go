@@ -8,6 +8,14 @@ import (
 
 type BoolNullable sql.NullBool
 
+func Bool(b bool) BoolNullable {
+	return BoolNullable{Valid: true, Bool: b}
+}
+
+func BoolNull() BoolNullable {
+	return BoolNullable{Valid: false}
+}
+
 // Scan implements the Scanner interface.
 func (n *BoolNullable) Scan(value interface{}) error {
 	return (*sql.NullBool)(n).Scan(value)

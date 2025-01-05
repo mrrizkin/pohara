@@ -4,9 +4,18 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"time"
 )
 
 type TimeNullable sql.NullTime
+
+func Time(t time.Time) TimeNullable {
+	return TimeNullable{Valid: true, Time: t}
+}
+
+func TimeNull() TimeNullable {
+	return TimeNullable{Valid: false}
+}
 
 // Scan implements the Scanner interface.
 func (n *TimeNullable) Scan(value interface{}) error {

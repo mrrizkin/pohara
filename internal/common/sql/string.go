@@ -8,6 +8,14 @@ import (
 
 type StringNullable sql.NullString
 
+func String(s string) StringNullable {
+	return StringNullable{Valid: true, String: s}
+}
+
+func StringNull() StringNullable {
+	return StringNullable{Valid: false}
+}
+
 // Scan implements the Scanner interface.
 func (n *StringNullable) Scan(value interface{}) error {
 	return (*sql.NullString)(n).Scan(value)
