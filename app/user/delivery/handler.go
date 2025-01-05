@@ -91,16 +91,10 @@ func (h *UserHandler) UserCreate(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
 func (h *UserHandler) UserFind(ctx *fiber.Ctx) error {
-	offset := sql.Int64Nullable{
-		Valid: true,
-		Int64: int64(ctx.QueryInt("page", 1)),
-	}
-	limit := sql.Int64Nullable{
-		Valid: true,
-		Int64: int64(ctx.QueryInt("limit", 10)),
-	}
+	page := int64(ctx.QueryInt("page", 1))
+	limit := int64(ctx.QueryInt("limit", 10))
 
-	result, err := h.userService.Find(offset, limit)
+	result, err := h.userService.Find(sql.Int64((page-1)*limit), sql.Int64(limit))
 	if err != nil {
 		h.log.Error("failed to get users", "err", err)
 		return &fiber.Error{

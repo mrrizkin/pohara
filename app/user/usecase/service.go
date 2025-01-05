@@ -48,10 +48,7 @@ func (s *UserService) Create(user *entity.User) (*entity.User, error) {
 		return nil, err
 	}
 
-	user.Password = sql.StringNullable{
-		String: hash,
-		Valid:  true,
-	}
+	user.Password = sql.String(hash)
 
 	err = s.repo.Create(user)
 	if err != nil {
@@ -86,10 +83,7 @@ func (s *UserService) Update(id uint, user *entity.User) (*entity.User, error) {
 			return nil, err
 		}
 
-		userExist.Password = sql.StringNullable{
-			Valid:  true,
-			String: hash,
-		}
+		userExist.Password = sql.String(hash)
 	}
 
 	userExist.Name = user.Name
