@@ -1,109 +1,43 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/mrrizkin/pohara/internal/auth/access"
 	"github.com/mrrizkin/pohara/internal/auth/entity"
-	"github.com/mrrizkin/pohara/internal/common/sql"
-	"github.com/mrrizkin/pohara/internal/ports"
-	"gorm.io/gorm"
+	"github.com/mrrizkin/pohara/internal/auth/repository"
 )
 
-// AuthContext holds contextual information for authorization
-type AuthContext struct {
-	Time     time.Time
-	IP       string
-	Location string
-	// Add other context attributes as needed
+type PolicyDecision struct {
+	authRepo *repository.Repository
 }
 
-func (c AuthContext) Hash() string {
-	return fmt.Sprintf("%d:%s:%s", c.Time.Unix(), c.IP, c.Location)
+type PolicyDecisionDependencies struct {
+	AuthRepository *repository.Repository
 }
 
-type Enforcer struct {
-	db    ports.Database
-	cache ports.Cache
-}
-
-type EnforcerDependencies struct {
-	Database ports.Database
-	Cache    ports.Cache
-}
-
-func NewEnforcer(deps EnforcerDependencies) *Enforcer {
-	return &Enforcer{
-		db:    deps.Database,
-		cache: deps.Cache,
+func NewPolicyDecision(deps PolicyDecisionDependencies) *PolicyDecision {
+	return &PolicyDecision{
+		authRepo: deps.AuthRepository,
 	}
 }
 
-func (e *Enforcer) IsAllowed(subject entity.Subject, action entity.Action, resource entity.Resource, ctx AuthContext) bool {
-	start := time.Now()
-	traceID := "traceID"
-
-	auditLog := &entity.AuditAuthLog{
-		TraceID:      traceID,
-		Timestamp:    start,
-		SubjectID:    subject.GetSubjectID(),
-		SubjectName:  subject.GetSubjectName(),
-		Action:       action,
-		ResourceType: resource.GetResourceType(),
-		ResourceID:   resource.GetResourceID(),
-	}
-
-	defer func() {
-		auditLog.Duration = time.Since(start).Nanoseconds()
-		e.db.Create(auditLog)
-	}()
-
-	cacheKey := e.generateCacheKey(subject, action, resource, ctx)
-	if cachedDecision, ok := e.checkCache(cacheKey); ok {
-		auditLog.Decision = "Cache hit"
-		auditLog.Effect = cachedDecision
-		return cachedDecision
-	}
-
-	decision, matchedPolicyID, policyIDs, explanation := e.evaluateAccess(subject, action, resource, ctx)
-
-	auditLog.Effect = decision
-	auditLog.PolicyIDs = policyIDs
-	auditLog.MatchedPolicyID = matchedPolicyID
-	auditLog.Decision = explanation
-
-	e.cacheDecision(cacheKey, decision)
-
-	return false
-}
-
-// evaluateAccess makes and explains the access decision
-func (e *Enforcer) evaluateAccess(
+// EvaluateAccess makes and explains the access decision
+func (e *PolicyDecision) EvaluateAccess(
 	subject entity.Subject,
-	action entity.Action,
+	action access.Action,
 	resource entity.Resource,
-	ctx AuthContext,
+	ctx entity.AuthContext,
 ) (bool, *uint, []uint, string) {
-	var policies []entity.Policy
 	var policyIDs []uint
 	var matchedPolicyID *uint
 	var explanation strings.Builder
 
-	db := e.db.GetDB().(*gorm.DB)
-
-	result := db.Preload("Roles").
-		Joins("JOIN role_policies ON role_policies.policy_id = policies.id").
-		Joins("JOIN user_roles ON user_roles.role_id = role_policies.role_id").
-		Where("user_roles.subject_id = ? AND policies.resource_type = ? AND policies.action = ?",
-			subject.GetSubjectID(), resource.GetResourceType(), action).
-		Order("policies.priority DESC").
-		Find(&policies)
-
-	if result.Error != nil {
+	policies, err := e.authRepo.GetRolePolicy(subject, resource, action)
+	if err != nil {
 		explanation.WriteString("Error fetching policies")
 		return false, nil, nil, explanation.String()
 	}
@@ -115,7 +49,7 @@ func (e *Enforcer) evaluateAccess(
 
 	resourceAttrs := resource.GetAttributes()
 	subjectAttrs := subject.GetAttributes()
-	contextAttrs := getContextAttributes(ctx)
+	contextAttrs := ctx.GetAttributes()
 
 	highestPriority := policies[0].Priority
 	var allowPolicies, denyPolicies []entity.Policy
@@ -128,7 +62,7 @@ func (e *Enforcer) evaluateAccess(
 		}
 
 		if e.evaluateCondition(policy.Conditions, resourceAttrs, subjectAttrs, contextAttrs) {
-			if policy.Effect == entity.EffectAllow {
+			if policy.Effect == access.EffectAllow {
 				allowPolicies = append(allowPolicies, policy)
 			} else {
 				denyPolicies = append(denyPolicies, policy)
@@ -150,7 +84,7 @@ func (e *Enforcer) evaluateAccess(
 }
 
 // evaluateCondition evaluates a complex condition
-func (e *Enforcer) evaluateCondition(
+func (e *PolicyDecision) evaluateCondition(
 	condition entity.Condition,
 	resourceAttrs, subjectAttrs, contextAttrs map[string]interface{},
 ) bool {
@@ -181,7 +115,7 @@ func (e *Enforcer) evaluateCondition(
 }
 
 // evaluateRule evaluates a single condition rule
-func (e *Enforcer) evaluateRule(
+func (e *PolicyDecision) evaluateRule(
 	rule entity.ConditionRule,
 	resourceAttrs, subjectAttrs, contextAttrs map[string]interface{},
 ) bool {
@@ -201,72 +135,6 @@ func (e *Enforcer) evaluateRule(
 		}
 	}
 	return true
-}
-
-// AuditQuery represents search criteria for audit logs
-type AuditQuery struct {
-	StartTime    *time.Time
-	EndTime      *time.Time
-	SubjectID    *uint
-	ResourceType *string
-	Action       *entity.Action
-	Effect       *bool
-	PolicyID     *uint
-	Page         int
-	PageSize     int
-}
-
-// SearchAuditLogs searches audit logs with pagination
-func (s *Enforcer) SearchAuditLogs(query AuditQuery) (*ports.FindResult, error) {
-	wheres := []string{}
-	whereArgs := []interface{}{}
-
-	if query.StartTime != nil {
-		wheres = append(wheres, "timestamp >= ?")
-		whereArgs = append(whereArgs, query.StartTime)
-	}
-	if query.EndTime != nil {
-		wheres = append(wheres, "timestamp <= ?")
-		whereArgs = append(whereArgs, query.EndTime)
-	}
-	if query.SubjectID != nil {
-		wheres = append(wheres, "subject_id = ?")
-		whereArgs = append(whereArgs, *query.SubjectID)
-	}
-	if query.ResourceType != nil {
-		wheres = append(wheres, "resource_type = ?")
-		whereArgs = append(whereArgs, *query.ResourceType)
-	}
-	if query.Action != nil {
-		wheres = append(wheres, "action = ?")
-		whereArgs = append(whereArgs, *query.Action)
-	}
-	if query.Effect != nil {
-		wheres = append(wheres, "effect = ?")
-		whereArgs = append(whereArgs, *query.Effect)
-	}
-	if query.PolicyID != nil {
-		wheres = append(wheres, "matched_policy_id = ?")
-		whereArgs = append(whereArgs, *query.PolicyID)
-	}
-
-	where := strings.Join(wheres, " AND ")
-	conds := []interface{}{where}
-	for _, arg := range whereArgs {
-		conds = append(conds, arg)
-	}
-
-	var logs []entity.AuditAuthLog
-	result, err := s.db.Find(&logs, ports.Pagination{
-		Limit:  sql.Int64Nullable{Int64: int64(query.PageSize), Valid: true},
-		Offset: sql.Int64Nullable{Int64: int64((query.Page - 1) * query.PageSize), Valid: true},
-		Sort:   sql.StringNullable{Valid: true, String: "timestamp DESC"},
-	}, conds...)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 // evaluateAttributeRule evaluates a single attribute rule
@@ -378,37 +246,4 @@ func valueInSlice(value, slice interface{}) bool {
 		}
 	}
 	return false
-}
-
-func getContextAttributes(ctx AuthContext) map[string]interface{} {
-	return map[string]interface{}{
-		"time":     ctx.Time,
-		"ip":       ctx.IP,
-		"location": ctx.Location,
-	}
-}
-
-// Cache related methods
-func (e *Enforcer) generateCacheKey(subject entity.Subject, action entity.Action, resource entity.Resource, ctx AuthContext) string {
-	return fmt.Sprintf("auth:%d:%s:%s:%d:%s",
-		subject.GetSubjectID(),
-		action,
-		resource.GetResourceType(),
-		resource.GetResourceID(),
-		ctx.Hash(),
-	)
-}
-
-func (e *Enforcer) checkCache(key string) (bool, bool) {
-	ctx := context.Background()
-	val, ok := e.cache.Get(ctx, key)
-	if !ok {
-		return false, false
-	}
-	return val == "true", true
-}
-
-func (e *Enforcer) cacheDecision(key string, decision bool) {
-	ctx := context.Background()
-	e.cache.Set(ctx, key, fmt.Sprintf("%t", decision))
 }

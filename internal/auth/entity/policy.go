@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/mrrizkin/pohara/internal/auth/access"
 	"github.com/mrrizkin/pohara/internal/common/sql"
 	"gorm.io/gorm"
 )
@@ -13,8 +14,8 @@ type Policy struct {
 	Name        string           `json:"name" gorm:"unique;not null;index"`
 	Description string           `json:"description"`
 	Resource    string           `json:"resource"`
-	Action      Action           `json:"action"`
-	Effect      Effect           `json:"effect"`
+	Action      access.Action    `json:"action"`
+	Effect      access.Effect    `json:"effect"`
 	Priority    uint             `json:"priority"`
 	Conditions  Condition        `json:"conditions" gorm:"type:jsonb"`
 }

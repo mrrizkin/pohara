@@ -1,4 +1,4 @@
-package entity
+package access
 
 // Effect type for policy effects
 type Effect string

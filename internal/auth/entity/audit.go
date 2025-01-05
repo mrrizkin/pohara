@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	"github.com/mrrizkin/pohara/internal/auth/access"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,7 @@ type AuditAuthLog struct {
 	Timestamp       time.Time
 	SubjectID       uint
 	SubjectName     string
-	Action          Action
+	Action          access.Action
 	ResourceType    string
 	ResourceID      uint
 	Effect          bool
@@ -26,4 +27,16 @@ type AuditAuthLog struct {
 
 func (AuditAuthLog) TableName() string {
 	return "audit_auth_logs"
+}
+
+type AuditQuery struct {
+	StartTime    *time.Time
+	EndTime      *time.Time
+	SubjectID    *uint
+	ResourceType *string
+	Action       *access.Action
+	Effect       *bool
+	PolicyID     *uint
+	Page         int
+	PageSize     int
 }
