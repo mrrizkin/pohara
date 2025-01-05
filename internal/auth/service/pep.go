@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mrrizkin/pohara/internal/auth/entity"
+	"github.com/mrrizkin/pohara/internal/common/sql"
 	"github.com/mrrizkin/pohara/internal/ports"
 	"gorm.io/gorm"
 )
@@ -202,6 +203,72 @@ func (e *Enforcer) evaluateRule(
 	return true
 }
 
+// AuditQuery represents search criteria for audit logs
+type AuditQuery struct {
+	StartTime    *time.Time
+	EndTime      *time.Time
+	SubjectID    *uint
+	ResourceType *string
+	Action       *entity.Action
+	Effect       *bool
+	PolicyID     *uint
+	Page         int
+	PageSize     int
+}
+
+// SearchAuditLogs searches audit logs with pagination
+func (s *Enforcer) SearchAuditLogs(query AuditQuery) (*ports.FindResult, error) {
+	wheres := []string{}
+	whereArgs := []interface{}{}
+
+	if query.StartTime != nil {
+		wheres = append(wheres, "timestamp >= ?")
+		whereArgs = append(whereArgs, query.StartTime)
+	}
+	if query.EndTime != nil {
+		wheres = append(wheres, "timestamp <= ?")
+		whereArgs = append(whereArgs, query.EndTime)
+	}
+	if query.SubjectID != nil {
+		wheres = append(wheres, "subject_id = ?")
+		whereArgs = append(whereArgs, *query.SubjectID)
+	}
+	if query.ResourceType != nil {
+		wheres = append(wheres, "resource_type = ?")
+		whereArgs = append(whereArgs, *query.ResourceType)
+	}
+	if query.Action != nil {
+		wheres = append(wheres, "action = ?")
+		whereArgs = append(whereArgs, *query.Action)
+	}
+	if query.Effect != nil {
+		wheres = append(wheres, "effect = ?")
+		whereArgs = append(whereArgs, *query.Effect)
+	}
+	if query.PolicyID != nil {
+		wheres = append(wheres, "matched_policy_id = ?")
+		whereArgs = append(whereArgs, *query.PolicyID)
+	}
+
+	where := strings.Join(wheres, " AND ")
+	conds := []interface{}{where}
+	for _, arg := range whereArgs {
+		conds = append(conds, arg)
+	}
+
+	var logs []entity.AuditAuthLog
+	result, err := s.db.Find(&logs, ports.Pagination{
+		Limit:  sql.Int64Nullable{Int64: int64(query.PageSize), Valid: true},
+		Offset: sql.Int64Nullable{Int64: int64((query.Page - 1) * query.PageSize), Valid: true},
+		Sort:   sql.StringNullable{Valid: true, String: "timestamp DESC"},
+	}, conds...)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // evaluateAttributeRule evaluates a single attribute rule
 func evaluateAttributeRule(rule entity.AttributeRule, attrs map[string]interface{}) bool {
 	value, exists := attrs[rule.Attribute]
@@ -248,83 +315,66 @@ func evaluateAttributeRule(rule entity.AttributeRule, attrs map[string]interface
 	return false
 }
 
-// Helper functions for value comparison
+// Helper functions for value comparison and manipulation
 func compareValues(a, b interface{}) int {
-	switch a := a.(type) {
-	case int:
-		b := b.(int)
-		if a < b {
+	aVal := reflect.ValueOf(a)
+	bVal := reflect.ValueOf(b)
+
+	switch aVal.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		aInt := aVal.Int()
+		bInt := bVal.Int()
+		if aInt < bInt {
 			return -1
-		} else if a > b {
+		} else if aInt > bInt {
 			return 1
 		}
 		return 0
-	case float64:
-		b := b.(float64)
-		if a < b {
+	case reflect.Float32, reflect.Float64:
+		aFloat := aVal.Float()
+		bFloat := bVal.Float()
+		if aFloat < bFloat {
 			return -1
-		} else if a > b {
+		} else if aFloat > bFloat {
 			return 1
 		}
 		return 0
-	case string:
-		b := b.(string)
-		if a < b {
-			return -1
-		} else if a > b {
-			return 1
-		}
-		return 0
+	case reflect.String:
+		aString := aVal.String()
+		bString := bVal.String()
+		return strings.Compare(aString, bString)
 	default:
 		return 0
 	}
 }
 
 func containsValue(container, item interface{}) bool {
-	switch container := container.(type) {
-	case string:
-		return strings.Contains(container, fmt.Sprint(item))
-	case []string:
-		for _, v := range container {
-			if v == item {
+	containerVal := reflect.ValueOf(container)
+
+	switch containerVal.Kind() {
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < containerVal.Len(); i++ {
+			if reflect.DeepEqual(containerVal.Index(i).Interface(), item) {
 				return true
 			}
 		}
-	case []int:
-		for _, v := range container {
-			if v == item {
-				return true
-			}
-		}
-	case []interface{}:
-		for _, v := range container {
-			if reflect.DeepEqual(v, item) {
-				return true
-			}
+	case reflect.String:
+		if itemStr, ok := item.(string); ok {
+			return strings.Contains(containerVal.String(), itemStr)
 		}
 	}
 	return false
 }
 
 func valueInSlice(value, slice interface{}) bool {
-	switch slice := slice.(type) {
-	case []string:
-		for _, v := range slice {
-			if v == value {
-				return true
-			}
-		}
-	case []int:
-		for _, v := range slice {
-			if v == value {
-				return true
-			}
-		}
-	case []interface{}:
-		for _, v := range slice {
-			if reflect.DeepEqual(v, value) {
-				return true
-			}
+	sliceVal := reflect.ValueOf(slice)
+	if sliceVal.Kind() != reflect.Slice && sliceVal.Kind() != reflect.Array {
+		return false
+	}
+
+	for i := 0; i < sliceVal.Len(); i++ {
+		if reflect.DeepEqual(sliceVal.Index(i).Interface(), value) {
+			return true
 		}
 	}
 	return false
