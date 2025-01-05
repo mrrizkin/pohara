@@ -1,8 +1,10 @@
 import {
+	Activity,
 	AudioWaveform,
 	Bell,
 	CircleHelp,
 	Command,
+	Fingerprint,
 	GalleryVerticalEnd,
 	LayoutDashboard,
 	ListTodo,
@@ -111,6 +113,22 @@ export const sidebarData: SidebarData = {
 					title: "Help Center",
 					url: "/_/help-center",
 					icon: CircleHelp,
+				},
+			],
+		},
+		{
+			title: "System",
+			items: [
+				{
+					title: "Audits",
+					icon: Activity,
+					items: [
+						{
+							title: "Authentication",
+							url: "/_/audits/authentication",
+							icon: Fingerprint,
+						},
+					],
 				},
 			],
 		},

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"math/rand"
 	"os"
 	"reflect"
 
@@ -14,6 +13,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/config"
+	"github.com/mrrizkin/pohara/internal/common/nanoid"
 	"github.com/mrrizkin/pohara/web"
 )
 
@@ -81,23 +81,13 @@ func getVersionFromManifest(path string) string {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		// If file doesn't exist, generate random string
-		return randString(16)
+		return nanoid.New()
 	}
 
 	// Create MD5 hash
 	hash := md5.New()
 	hash.Write(data)
 	return hex.EncodeToString(hash.Sum(nil))
-}
-
-// Helper function to generate random string
-func randString(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
 }
 
 // EncryptHistory enables history encryption

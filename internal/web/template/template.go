@@ -289,9 +289,7 @@ func loader(t *Template) error {
 
 func (t *Template) cacheKey(template string, data map[string]interface{}) sql.StringNullable {
 	if !t.config.IsCacheView() {
-		return sql.StringNullable{
-			Valid: false,
-		}
+		return sql.StringNull()
 	}
 
 	var cacheKey string
@@ -299,9 +297,7 @@ func (t *Template) cacheKey(template string, data map[string]interface{}) sql.St
 	if data != nil {
 		encodedData, err := json.Marshal(data)
 		if err != nil {
-			return sql.StringNullable{
-				Valid: false,
-			}
+			return sql.StringNull()
 		}
 
 		hash = md5.Sum(append([]byte(template), encodedData...))
@@ -311,8 +307,5 @@ func (t *Template) cacheKey(template string, data map[string]interface{}) sql.St
 
 	cacheKey = hex.EncodeToString(hash[:])
 
-	return sql.StringNullable{
-		Valid:  true,
-		String: cacheKey,
-	}
+	return sql.String(cacheKey)
 }

@@ -41,11 +41,18 @@ var Module = fx.Module("gormdb",
 	fx.Provide(func(db *GormDatabase) ports.Database { return db }),
 )
 
-func AsGormMigration(model interface{}) any {
-	return fx.Annotate(
-		func() interface{} { return model },
-		fx.ResultTags(`group:"gorm_migrate"`),
-	)
+type GormMigrationResult struct {
+	fx.Out
+
+	Models []interface{} `group:"gorm_migrate"`
+}
+
+func AsGormMigration(models ...interface{}) any {
+	return func() GormMigrationResult {
+		return GormMigrationResult{
+			Models: models,
+		}
+	}
 }
 
 func NewGormDB(
@@ -142,17 +149,13 @@ func (g *GormDatabase) Find(
 		return nil, err
 	}
 
-	page := sql.Int64Nullable{
-		Valid: false,
-	}
+	page := sql.Int64Null()
 	if p.Offset.Valid && p.Limit.Valid && p.Limit.Int64 != 0 {
 		page.Valid = true
 		page.Int64 = int64(math.Ceil(float64(p.Offset.Int64)/float64(p.Limit.Int64))) + 1
 	}
 
-	totalPage := sql.Int64Nullable{
-		Valid: false,
-	}
+	totalPage := sql.Int64Null()
 	if p.Offset.Valid && p.Limit.Valid && p.Limit.Int64 != 0 {
 		totalPage.Valid = true
 		totalPage.Int64 = int64(math.Ceil(float64(p.Offset.Int64)/float64(p.Limit.Int64))) + 1
@@ -198,11 +201,15 @@ type LoadMigrationModelsDependencies struct {
 
 	Log    ports.Logger
 	GormDB *GormDatabase
-	Models []interface{} `group:"gorm_migrate"`
+	Models [][]interface{} `group:"gorm_migrate"`
 }
 
 func loadMigrationModels(deps LoadMigrationModelsDependencies) *GormDatabase {
-	deps.Log.Info("loading migration models", "count", len(deps.Models))
-	deps.GormDB.db.AutoMigrate(deps.Models...)
+	models := []interface{}{}
+	for _, m := range deps.Models {
+		models = append(models, m...)
+	}
+	deps.Log.Info("loading migration models", "count", len(models))
+	deps.GormDB.db.AutoMigrate(models...)
 	return deps.GormDB
 }
