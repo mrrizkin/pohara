@@ -16,11 +16,6 @@ type (
 		Value       interface{}
 	}
 
-	GlobalErrorResponse struct {
-		Status string `json:"status"`
-		Detail string `json:"detail"`
-	}
-
 	Validator struct {
 		validator *validator.Validate
 	}

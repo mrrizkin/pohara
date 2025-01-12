@@ -98,9 +98,9 @@ func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
 	return &user, err
 }
 
-func (r *UserRepository) FindByUsername(username string) (*model.MUser, error) {
+func (r *UserRepository) FindByEmail(email string) (*model.MUser, error) {
 	var user model.MUser
-	err := r.db.Where("username = ?", username).First(&user).Error
+	err := r.db.Where("email = ?", email).First(&user).Error
 	return &user, err
 }
 

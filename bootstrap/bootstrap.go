@@ -6,6 +6,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/app/http/controllers"
+	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth"
 	"github.com/mrrizkin/pohara/modules/common/hash"
@@ -21,6 +22,7 @@ func App() *fx.App {
 		controllers.Module,
 		core.Module,
 		neoweb.Module,
+		model.Module,
 		hash.Module,
 		repository.Module,
 		routes.Module,

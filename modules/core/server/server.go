@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -20,9 +21,9 @@ import (
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/common/debug"
+	"github.com/mrrizkin/pohara/modules/common/response"
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/session"
-	"github.com/mrrizkin/pohara/modules/core/validator"
 )
 
 type Dependencies struct {
@@ -45,6 +46,10 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 			}
 
 			if c.Get("X-Requested-With") != "XMLHttpRequest" {
+				if strings.HasPrefix(c.Path(), "/_/") && code == fiber.StatusUnauthorized {
+					return c.Redirect("/_/auth/login")
+				}
+
 				if stackTrace, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
 					html := errorPageWithTrace(stackTrace, err, code)
 					return c.Type("html").Status(code).Send([]byte(html))
@@ -54,10 +59,21 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 				return c.Type("html").Status(code).Send([]byte(html))
 			}
 
-			return c.Status(code).JSON(validator.GlobalErrorResponse{
-				Status: "error",
-				Detail: err.Error(),
-			})
+			detail := ""
+			if !deps.Config.IsProduction() {
+				var stackFrames []debug.StackFrame
+				if stack, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
+					stackFrames = stack
+				} else if stack, err := debug.StackTrace(); err == nil {
+					stackFrames = stack
+				}
+
+				for _, frame := range stackFrames {
+					detail += fmt.Sprintf("%s (%s:%d)\n", frame.Function, frame.File, frame.Line)
+				}
+			}
+
+			return c.Status(code).JSON(response.ErrorMsg(err.Error(), detail))
 		},
 	})
 
@@ -105,7 +121,7 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	(WebRouters)(deps.WebRoutes).Register(
 		deps.App.Group("/",
 			csrf.New(csrf.Config{
-				KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_KEY),
+				KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_COOKIE_NAME),
 				CookieName:        deps.Config.CSRF_COOKIE_NAME,
 				CookieSameSite:    deps.Config.CSRF_SAME_SITE,
 				CookieSecure:      deps.Config.CSRF_SECURE,
@@ -115,7 +131,7 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 				Expiration:        time.Duration(deps.Config.CSRF_EXPIRATION) * time.Second,
 				KeyGenerator:      utils.UUIDv4,
 				ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
-				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_KEY),
+				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_COOKIE_NAME),
 				Session:           deps.Session.Store,
 				SessionKey:        "fiber.csrf.token",
 				HandlerContextKey: "fiber.csrf.handler",

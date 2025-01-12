@@ -2,11 +2,12 @@ package model
 
 import (
 	"go.uber.org/fx"
-	"gorm.io/gorm"
+
+	"github.com/mrrizkin/pohara/modules/core/database"
 )
 
 var Module = fx.Module("model",
-	fx.Invoke(func(db *gorm.DB) {
+	fx.Invoke(func(db *database.GormDB) {
 		db.AutoMigrate(
 			&CfgPolicy{},
 			&MRole{},

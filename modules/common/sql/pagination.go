@@ -1,11 +1,5 @@
 package sql
 
-type Pagination struct {
-	Limit  Int64Nullable
-	Offset Int64Nullable
-	Sort   StringNullable
-}
-
 type PaginationResult struct {
 	Data      interface{}
 	Total     int64

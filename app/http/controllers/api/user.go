@@ -9,6 +9,7 @@ import (
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
+	"github.com/mrrizkin/pohara/modules/common/response"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/validator"
@@ -80,7 +81,6 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 	}
 
 	var err error
-
 	var payload UserCreatePayload
 	err = c.validator.ParseBodyAndValidate(ctx, &payload)
 	if err != nil {
@@ -92,41 +92,39 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 	if payload.Password != "" {
 		cause := "password is required"
 		c.log.Error(cause)
-		return &fiber.Error{
-			Code:    fiber.StatusBadGateway,
-			Message: fmt.Sprintf("failed to create user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusBadGateway,
+			fmt.Sprintf("failed to create user: %s", cause),
+		)
 	}
 
 	hash, err := c.hashing.Generate(payload.Password)
 	if err != nil {
 		cause := "error hashing password"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to create user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to create user: %s", cause),
+		)
 	}
 
-	err = c.userRepo.Create(&model.MUser{
+	user := &model.MUser{
 		Name:     payload.Name,
 		Username: payload.Username,
 		Password: hash,
 		Email:    payload.Email,
-	})
-	if err != nil {
-		cause := "error create user to database"
-		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to create user: %s", cause),
-		}
 	}
 
-	return ctx.JSON(fiber.Map{
-		"status":  "success",
-		"message": "user created successfully",
-	})
+	if err := c.userRepo.Create(user); err != nil {
+		cause := "error create user to database"
+		c.log.Error(cause, "error", err)
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to create user: %s", cause),
+		)
+	}
+
+	return ctx.JSON(response.SuccessMsg("user created successfully"))
 }
 
 // UserFind godoc
@@ -160,23 +158,23 @@ func (c *UserController) UserFind(ctx *fiber.Ctx) error {
 	if err != nil {
 		cause := "error find users"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to get users: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to get users: %s", cause),
+		)
 	}
 
-	return ctx.JSON(fiber.Map{
-		"status":  "success",
-		"message": "users retrieved successfully",
-		"data":    result.Data,
-		"meta": fiber.Map{
-			"page":       result.Page,
-			"limit":      result.Limit,
-			"total":      result.Total,
-			"total_page": result.TotalPage,
-		},
-	})
+	return ctx.JSON(
+		response.SuccessPaginate("user retrieved successfully",
+			result.Data,
+			&response.Pagination{
+				Total:     result.Total,
+				TotalPage: result.TotalPage,
+				Page:      result.Page,
+				Limit:     result.Limit,
+			},
+		),
+	)
 }
 
 // UserFindByID godoc
@@ -201,35 +199,31 @@ func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
 	if err != nil {
 		cause := "error parse id required"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusBadRequest,
-			Message: "invalid id",
-		}
+		return fiber.NewError(
+			fiber.StatusBadRequest,
+			"invalid id",
+		)
 	}
 
 	user, err := c.userRepo.FindByID(uint(id))
 	if err != nil {
 		if err.Error() == "record not found" {
 			cause := "user not found"
-			return &fiber.Error{
-				Code:    fiber.StatusNotFound,
-				Message: cause,
-			}
+			return fiber.NewError(
+				fiber.StatusNotFound,
+				cause,
+			)
 		}
 
 		cause := "error get user"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to get user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to get user: %s", cause),
+		)
 	}
 
-	return ctx.JSON(fiber.Map{
-		"status":  "success",
-		"message": "user retrieved successfully",
-		"data":    user,
-	})
+	return ctx.JSON(response.Success("user retrieved successfully", user))
 }
 
 // UserUpdate godoc
@@ -251,17 +245,16 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 	}
 
 	var err error
-	var payload UserUpdatePayload
-
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		c.log.Error("failed to parse id", "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusBadRequest,
-			Message: "invalid id",
-		}
+		return fiber.NewError(
+			fiber.StatusBadRequest,
+			"invalid id",
+		)
 	}
 
+	var payload UserUpdatePayload
 	err = c.validator.ParseBodyAndValidate(ctx, &payload)
 	if err != nil {
 		c.log.Error("failed to parse and validate payload", "error", err)
@@ -272,18 +265,18 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 	if err != nil {
 		if err.Error() == "record not found" {
 			cause := "user not found"
-			return &fiber.Error{
-				Code:    fiber.StatusNotFound,
-				Message: cause,
-			}
+			return fiber.NewError(
+				fiber.StatusNotFound,
+				cause,
+			)
 		}
 
 		cause := "error get user"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to get user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to get user: %s", cause),
+		)
 	}
 
 	if payload.Password.Valid {
@@ -291,10 +284,10 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 		if err != nil {
 			cause := "error hashing password"
 			c.log.Error(cause, "error", err)
-			return &fiber.Error{
-				Code:    fiber.StatusInternalServerError,
-				Message: fmt.Sprintf("failed to create user: %s", cause),
-			}
+			return fiber.NewError(
+				fiber.StatusInternalServerError,
+				fmt.Sprintf("failed to create user: %s", cause),
+			)
 		}
 
 		user.Password = hash
@@ -310,17 +303,13 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 	if err != nil {
 		cause := "error update user to database"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to update user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to update user: %s", cause),
+		)
 	}
 
-	return ctx.JSON(fiber.Map{
-		"status":  "success",
-		"message": "user updated successfully",
-		"data":    user,
-	})
+	return ctx.JSON(response.Success("user updated successfully", user))
 }
 
 // UserDelete godoc
@@ -344,24 +333,21 @@ func (c *UserController) UserDelete(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		c.log.Error("failed to parse id", "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusBadRequest,
-			Message: "invalid id",
-		}
+		return fiber.NewError(
+			fiber.StatusBadRequest,
+			"invalid id",
+		)
 	}
 
 	err = c.userRepo.Delete(uint(id))
 	if err != nil {
 		cause := "error delete user in database"
 		c.log.Error(cause, "error", err)
-		return &fiber.Error{
-			Code:    fiber.StatusInternalServerError,
-			Message: fmt.Sprintf("failed to delete user: %s", cause),
-		}
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to delete user: %s", cause),
+		)
 	}
 
-	return ctx.JSON(fiber.Map{
-		"status":  "success",
-		"message": "user deleted successfully",
-	})
+	return ctx.JSON(response.SuccessMsg("user deleted successfully"))
 }

@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/romsar/gonertia"
+	"go.uber.org/fx"
+
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
+	"github.com/mrrizkin/pohara/modules/common/response"
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/validator"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
-	"github.com/romsar/gonertia"
-	"go.uber.org/fx"
 )
 
 type AuthController struct {
@@ -56,12 +58,13 @@ func (c *AuthController) RegisterPage(ctx *fiber.Ctx) error {
 	return c.inertia.Render(ctx, "auth/register", gonertia.Props{})
 }
 
-func (c *AuthController) Login(ctx *fiber.Ctx) error {
-	var input struct {
-		Username string `json:"username" validate:"required"`
-		Password string `json:"password" validate:"required"`
-	}
+type LoginInput struct {
+	Email    string `json:"email"    validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
 
+func (c *AuthController) Login(ctx *fiber.Ctx) error {
+	var input LoginInput
 	if err := c.validator.ParseBodyAndValidate(ctx, &input); err != nil {
 		cause := "error parse and validate"
 		c.log.Error(cause, "error", err)
@@ -69,22 +72,28 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	}
 
 	// get the user by the username
-	user, err := c.userRepo.FindByUsername(input.Username)
+	user, err := c.userRepo.FindByEmail(input.Email)
 	if err != nil {
-		cause := "user not found"
+		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("user not found: %s", cause))
+		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
 	}
 
 	// compore the password
 	if match, err := c.hash.Compare(user.Password, input.Password); !match || err != nil {
-		cause := "user not found"
+		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("user not found: %s", cause))
+		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
 	}
 
 	// login
-	return c.authService.Login(ctx, user.ID)
+	if err := c.authService.Login(ctx, user.ID); err != nil {
+		cause := "error login"
+		c.log.Error(cause, "error", err)
+		return err
+	}
+
+	return ctx.JSON(response.SuccessMsg("login successfully"))
 }
 
 func (c *AuthController) Register(ctx *fiber.Ctx) error {
@@ -92,5 +101,12 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 }
 
 func (c *AuthController) Logout(ctx *fiber.Ctx) error {
-	return c.authService.Logout(ctx)
+	err := c.authService.Logout(ctx)
+	if err != nil {
+		cause := "error logout"
+		c.log.Error(cause, "error", err)
+		return err
+	}
+
+	return ctx.JSON(response.SuccessMsg("logout successfully"))
 }

@@ -10,6 +10,7 @@ import (
 var Module = fx.Module("controllers",
 	fx.Provide(
 		NewWelcomeController,
+		NewAuthController,
 
 		api.NewUserController,
 
