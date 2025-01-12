@@ -34,6 +34,7 @@ public/build
 
 # Generated files
 *_templ.go
+*_templ.txt
 
 # Log files
 /log

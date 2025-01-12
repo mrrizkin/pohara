@@ -7,6 +7,7 @@ import (
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/app/http/controllers"
 	"github.com/mrrizkin/pohara/app/repository"
+	"github.com/mrrizkin/pohara/modules/auth"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/core"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -23,6 +24,7 @@ func App() *fx.App {
 		hash.Module,
 		repository.Module,
 		routes.Module,
+		auth.Module,
 
 		fx.WithLogger(func(logger *logger.ZeroLog) fxevent.Logger {
 			return logger

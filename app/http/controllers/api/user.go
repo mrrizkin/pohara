@@ -95,7 +95,7 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 		}
 	}
 
-	err = c.userRepo.Create(&model.User{
+	err = c.userRepo.Create(&model.MUser{
 		Name:     payload.Name,
 		Username: payload.Username,
 		Password: hash,

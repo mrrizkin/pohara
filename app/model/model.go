@@ -8,7 +8,7 @@ import (
 var Module = fx.Module("model",
 	fx.Invoke(func(db *gorm.DB) {
 		db.AutoMigrate(
-			&User{},
+			&MUser{},
 		)
 	}),
 )

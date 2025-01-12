@@ -38,7 +38,7 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 	}
 }
 
-func (r *UserRepository) Create(user *model.User) error {
+func (r *UserRepository) Create(user *model.MUser) error {
 	return r.db.Create(user).Error
 }
 
@@ -46,7 +46,7 @@ func (r *UserRepository) Find(
 	search sql.StringNullable,
 	page, limit sql.Int64Nullable,
 ) (result *sql.PaginationResult, err error) {
-	var users []model.User
+	var users []model.MUser
 	var total int64
 
 	query := r.db.Model(&users)
@@ -92,16 +92,16 @@ func (r *UserRepository) Find(
 	return
 }
 
-func (r *UserRepository) FindByID(id uint) (*model.User, error) {
-	var user model.User
+func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
+	var user model.MUser
 	err := r.db.First(&user, id).Error
 	return &user, err
 }
 
-func (r *UserRepository) Update(user *model.User) error {
+func (r *UserRepository) Update(user *model.MUser) error {
 	return r.db.Save(user).Error
 }
 
 func (r *UserRepository) Delete(id uint) error {
-	return r.db.Delete(&model.User{}, id).Error
+	return r.db.Delete(&model.MUser{}, id).Error
 }
