@@ -6,6 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
+	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -18,6 +20,8 @@ type UserController struct {
 	validator *validator.Validator
 	userRepo  *repository.UserRepository
 	hashing   *hash.Hashing
+
+	authService *service.AuthService
 }
 
 type UserControllerDependencies struct {
@@ -27,6 +31,8 @@ type UserControllerDependencies struct {
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
 
+	AuthService *service.AuthService
+
 	UserRepository *repository.UserRepository
 }
 
@@ -35,7 +41,10 @@ func NewUserController(deps UserControllerDependencies) *UserController {
 		log:       deps.Logger.Scope("user_controller"),
 		validator: deps.Validator,
 		hashing:   deps.Hashing,
-		userRepo:  deps.UserRepository,
+
+		authService: deps.AuthService,
+
+		userRepo: deps.UserRepository,
 	}
 }
 
@@ -66,6 +75,10 @@ type UserUpdatePayload struct {
 //	@Failure		  500		    {object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			  /user     [post]
 func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
+	if !c.authService.Can(ctx, access.ActionGeneralCreate, &model.MUser{}) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to create user")
+	}
+
 	var err error
 
 	var payload UserCreatePayload
@@ -129,6 +142,10 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
 func (c *UserController) UserFind(ctx *fiber.Ctx) error {
+	if !c.authService.Can(ctx, access.ActionGeneralRead, &model.MUser{}) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get users")
+	}
+
 	page := int64(ctx.QueryInt("page", 1))
 	limit := int64(ctx.QueryInt("limit", 10))
 	searchQ := ctx.Query("q", "")
@@ -176,6 +193,10 @@ func (c *UserController) UserFind(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [get]
 func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
+	if !c.authService.Can(ctx, access.ActionGeneralRead, &model.MUser{}) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get user")
+	}
+
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		cause := "error parse id required"
@@ -225,6 +246,10 @@ func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
 //	@Failure		500		{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [put]
 func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
+	if !c.authService.Can(ctx, access.ActionGeneralUpdate, &model.MUser{}) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to update user")
+	}
+
 	var err error
 	var payload UserUpdatePayload
 
@@ -312,6 +337,10 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	validator.GlobalErrorResponse	"Internal server error"
 //	@Router			/user/{id} [delete]
 func (c *UserController) UserDelete(ctx *fiber.Ctx) error {
+	if !c.authService.Can(ctx, access.ActionGeneralDelete, &model.MUser{}) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to delete user")
+	}
+
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		c.log.Error("failed to parse id", "error", err)

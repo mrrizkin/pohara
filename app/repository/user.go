@@ -98,6 +98,12 @@ func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
 	return &user, err
 }
 
+func (r *UserRepository) FindByUsername(username string) (*model.MUser, error) {
+	var user model.MUser
+	err := r.db.Where("username = ?", username).First(&user).Error
+	return &user, err
+}
+
 func (r *UserRepository) Update(user *model.MUser) error {
 	return r.db.Save(user).Error
 }

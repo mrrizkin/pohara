@@ -12,7 +12,7 @@ func NewPolicyDecisionService() *PolicyDecisionService {
 	return &PolicyDecisionService{}
 }
 
-func (a *PolicyDecisionService) IsAllowed(
+func (a *PolicyDecisionService) EvaluateAccess(
 	subject *model.MUser,
 	attributes *model.MUserAttribute,
 	action access.Action,
