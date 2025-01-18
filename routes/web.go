@@ -21,6 +21,8 @@ type WebRouterDependencies struct {
 	Dashboard *admin.DashboardController
 	Setting   *admin.SettingController
 
+	Setup *controllers.SetupController
+
 	Auth    *controllers.AuthController
 	Welcome *controllers.WelcomeController
 }
@@ -32,6 +34,9 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		webAdmin := r.Group("/_/", deps.Inertia.Middleware())
 		webAdmin.Get("/", deps.AuthService.Authenticated, deps.Dashboard.Index).
 			Name("dashboard.index")
+
+		setup := webAdmin.Group("/setup").Name("setup.")
+		setup.Get("/", deps.Setup.Index).Name("index")
 
 		auth := webAdmin.Group("/auth").Name("auth.")
 		auth.Get("/login", deps.Auth.LoginPage).Name("login")

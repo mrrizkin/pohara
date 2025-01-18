@@ -12,6 +12,8 @@ var Module = fx.Module("controllers",
 		NewWelcomeController,
 		NewAuthController,
 
+		NewSetupController,
+
 		api.NewUserController,
 
 		admin.NewSettingController,
