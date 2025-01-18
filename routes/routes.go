@@ -3,7 +3,7 @@ package routes
 import (
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/modules/core/server"
+	"github.com/mrrizkin/pohara/modules/server"
 )
 
 var Module = fx.Module("routes",

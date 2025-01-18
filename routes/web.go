@@ -8,8 +8,8 @@ import (
 	"github.com/mrrizkin/pohara/app/http/controllers"
 	"github.com/mrrizkin/pohara/app/http/controllers/admin"
 	"github.com/mrrizkin/pohara/modules/auth/service"
-	"github.com/mrrizkin/pohara/modules/core/server"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/server"
 )
 
 type WebRouterDependencies struct {
@@ -30,7 +30,8 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		r.Get("/", deps.Welcome.Index).Name("welcome")
 
 		webAdmin := r.Group("/_/", deps.Inertia.Middleware())
-		webAdmin.Get("/", deps.AuthService.Authenticated, deps.Dashboard.Index).Name("dashboard.index")
+		webAdmin.Get("/", deps.AuthService.Authenticated, deps.Dashboard.Index).
+			Name("dashboard.index")
 
 		auth := webAdmin.Group("/auth").Name("auth.")
 		auth.Get("/login", deps.Auth.LoginPage).Name("login")

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/mrrizkin/pohara/bootstrap"
+	"go.uber.org/fx"
 )
 
 // @title						Pohara API
@@ -21,7 +24,15 @@ import (
 // @externalDocs.description	OpenAPI Specification
 // @externalDocs.url			https://swagger.io/specification/
 func main() {
-	app := bootstrap.App()
+	var app *fx.App
+
+	if len(os.Args) > 1 && os.Args[1] == "cli" {
+		os.Args = append(os.Args[:1], os.Args[2:]...)
+		app = bootstrap.Console()
+	} else {
+		app = bootstrap.App()
+	}
+
 	if err := app.Err(); err != nil {
 		panic(err)
 	}

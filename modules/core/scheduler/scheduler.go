@@ -16,6 +16,14 @@ type Dependencies struct {
 	Logger *logger.ZeroLog
 }
 
+var Module = fx.Module("scheduler",
+	fx.Provide(
+		NewScheduler,
+	),
+	fx.Decorate(LoadSchedules),
+	fx.Invoke(StartScheduler),
+)
+
 // NewScheduler creates a new Scheduler instance
 func NewScheduler(deps Dependencies) *Scheduler {
 	return &Scheduler{

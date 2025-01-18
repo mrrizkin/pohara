@@ -6,7 +6,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/http/controllers/api"
 	"github.com/mrrizkin/pohara/modules/auth/service"
-	"github.com/mrrizkin/pohara/modules/core/server"
+	"github.com/mrrizkin/pohara/modules/server"
 )
 
 type ApiRouterV1Dependencies struct {

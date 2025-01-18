@@ -33,6 +33,15 @@ type Dependencies struct {
 	Logger *logger.ZeroLog
 }
 
+var Module = fx.Module("server",
+	fx.Provide(
+		NewServer,
+	),
+
+	fx.Decorate(SetupRouter),
+	fx.Invoke(StartServer),
+)
+
 func NewServer(deps Dependencies) (*fiber.App, error) {
 	app := fiber.New(fiber.Config{
 		Prefork:               deps.Config.APP_PREFORK,
