@@ -310,7 +310,7 @@ func (m *Migrator) CreateMigration(name string) error {
 	migrationEntry.Close()
 
 	// replace the /** PLACEHOLDER **/ with the struct name
-	content = bytes.Replace(content, []byte("/** PLACEHOLDER **/"), []byte("/** PLACEHOLDER **/\n\t\t&"+name+"{},"), -1)
+	content = bytes.Replace(content, []byte("/** PLACEHOLDER **/"), []byte("&"+name+"{},\n\t\t/** PLACEHOLDER **/"), -1)
 
 	// create a new file in the migrations directory
 	migrationEntry, err = os.Create(filepath.Join("database", "migration", "migration.go"))

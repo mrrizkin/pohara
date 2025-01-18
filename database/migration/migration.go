@@ -7,10 +7,11 @@ import (
 
 var Module = fx.Module("migration",
 	migrator.ProvideMigration(
-		/** PLACEHOLDER **/
-		&CreateMUserAttributeTable{},
-		&CreateCfgPolicyTable{},
-		&CreateMRoleTable{},
 		&CreateMUserTable{},
+		&CreateMRoleTable{},
+		&CreateCfgPolicyTable{},
+		&CreateMUserAttributeTable{},
+		&CreateCfgSettingTable{},
+		/** PLACEHOLDER **/
 	),
 )
