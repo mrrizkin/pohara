@@ -11,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import loginCoverImage from "../assets/image/login-cover.png"
+
 const loginFormSchema = z.object({
 	email: z.string().email(),
 	password: z.string().min(6),
@@ -124,7 +126,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 						</form>
 					</Form>
 					<div className="relative hidden bg-muted md:block">
-						<img src="/placeholder.svg" alt="Image" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
+						<img src={loginCoverImage} alt="Image" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" crossOrigin="" />
 					</div>
 				</CardContent>
 			</Card>

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -55,10 +54,6 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 			}
 
 			if c.Get("X-Requested-With") != "XMLHttpRequest" {
-				if strings.HasPrefix(c.Path(), "/_/") && code == fiber.StatusUnauthorized {
-					return c.Redirect("/_/auth/login")
-				}
-
 				if stackTrace, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
 					html := errorPageWithTrace(stackTrace, err, code)
 					return c.Type("html").Status(code).Send([]byte(html))

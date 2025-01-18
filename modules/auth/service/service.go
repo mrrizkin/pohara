@@ -57,7 +57,7 @@ func (a *AuthService) Authenticated(ctx *fiber.Ctx) error {
 	ctx.Locals("__auth-user", user)
 	ctx.Locals("__auth-user-attributes", userAttributes)
 
-	return ctx.Next()
+	return nil
 }
 
 func (a *AuthService) Login(ctx *fiber.Ctx, uid uint) error {

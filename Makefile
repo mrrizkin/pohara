@@ -29,7 +29,7 @@ dev:
 	@(trap 'kill 0' SIGINT; \
 		$(VITE_DEV) & \
 		$(TEMPL_WATCH) & \
-		sleep 5 && $(AIR) & \
+		sleep 3 && $(AIR) & \
 		wait)
 
 # Build everything (frontend first, then backend)

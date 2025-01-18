@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/app/http/controllers"
+	"github.com/mrrizkin/pohara/app/http/middleware"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth"
 	"github.com/mrrizkin/pohara/modules/common/hash"
@@ -19,6 +20,7 @@ import (
 func App() *fx.App {
 	return fx.New(
 		config.Module,
+		middleware.Module,
 		controllers.Module,
 		core.Module,
 		neoweb.Module,

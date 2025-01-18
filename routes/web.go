@@ -7,7 +7,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/http/controllers"
 	"github.com/mrrizkin/pohara/app/http/controllers/admin"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/app/http/middleware"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
 	"github.com/mrrizkin/pohara/modules/server"
 )
@@ -15,8 +15,9 @@ import (
 type WebRouterDependencies struct {
 	fx.In
 
-	AuthService *service.AuthService
-	Inertia     *inertia.Inertia
+	Inertia *inertia.Inertia
+
+	AuthMiddleware *middleware.AuthMiddleware
 
 	Dashboard *admin.DashboardController
 	Setting   *admin.SettingController
@@ -32,7 +33,7 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		r.Get("/", deps.Welcome.Index).Name("welcome")
 
 		webAdmin := r.Group("/_/", deps.Inertia.Middleware())
-		webAdmin.Get("/", deps.AuthService.Authenticated, deps.Dashboard.Index).
+		webAdmin.Get("/", deps.AuthMiddleware.Authenticated, deps.Dashboard.Index).
 			Name("dashboard.index")
 
 		setup := webAdmin.Group("/setup").Name("setup.")
@@ -43,9 +44,10 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		auth.Post("/login", deps.Auth.Login).Name("login")
 		auth.Get("/register", deps.Auth.RegisterPage).Name("register")
 		auth.Post("/register", deps.Auth.Register).Name("register")
-		auth.Post("/logout", deps.AuthService.Authenticated, deps.Auth.Logout).Name("auth.logout")
+		auth.Post("/logout", deps.AuthMiddleware.Authenticated, deps.Auth.Logout).
+			Name("auth.logout")
 
-		setting := webAdmin.Group("/settings", deps.AuthService.Authenticated).Name("setting.")
+		setting := webAdmin.Group("/settings", deps.AuthMiddleware.Authenticated).Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")
 		setting.Get("/account", deps.Setting.AccountPage).Name("account")
 		setting.Get("/appearance", deps.Setting.AppearancePage).Name("appearance")
