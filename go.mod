@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/gostackparse v0.7.0
 	github.com/a-h/templ v0.3.819
 	github.com/dgraph-io/ristretto/v2 v2.1.0
-	github.com/go-playground/validator/v10 v10.23.0
+	github.com/go-playground/validator/v10 v10.24.0
 	github.com/gofiber/contrib/fiberzerolog v1.0.2
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/gofiber/storage/memory/v2 v2.0.1
@@ -22,6 +22,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/fx v1.23.0
 	golang.org/x/crypto v0.32.0
+	golang.org/x/text v0.21.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
@@ -66,5 +67,4 @@ require (
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
 )
