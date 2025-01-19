@@ -20,15 +20,21 @@ func writeResponse(ctx *fiber.Ctx, w *responseWriter) error {
 		}
 	}
 
-	return ctx.Status(w.StatusCode()).Send(w.Body())
+	ctx = ctx.Status(w.StatusCode())
+
+	body := w.Body()
+	if len(body) > 0 {
+		return ctx.Send(body)
+	}
+
+	return nil
 }
 
 // responseWriter implementation
 
 func newResponseWriter() *responseWriter {
 	return &responseWriter{
-		header:     http.Header{},
-		statusCode: http.StatusOK,
+		header: http.Header{},
 	}
 }
 
@@ -37,18 +43,12 @@ func (w *responseWriter) Header() http.Header {
 }
 
 func (w *responseWriter) Write(b []byte) (int, error) {
-	if w.statusCode == 0 {
-		w.statusCode = http.StatusOK
-	}
-
 	w.body = append(w.body, b...)
 	return len(b), nil
 }
 
 func (w *responseWriter) WriteHeader(statusCode int) {
-	if w.statusCode == 0 {
-		w.statusCode = statusCode
-	}
+	w.statusCode = statusCode
 }
 
 func (w *responseWriter) Body() []byte {

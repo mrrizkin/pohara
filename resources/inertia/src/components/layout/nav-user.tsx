@@ -24,6 +24,11 @@ export function NavUser({
 }) {
 	const { isMobile } = useSidebar();
 
+	function logout() {
+		router.clearHistory();
+		router.post("/_/auth/logout");
+	}
+
 	return (
 		<SidebarMenu>
 			<SidebarMenuItem>
@@ -77,7 +82,7 @@ export function NavUser({
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onSelect={() => router.visit("/_/auth/login")}>
+						<DropdownMenuItem onSelect={logout}>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>

@@ -1,16 +1,21 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/repository"
+	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/session"
 )
 
 type AuthService struct {
 	session  *session.Session
+	log      *logger.ZeroLog
 	authRepo *repository.AuthRepository
 }
 
@@ -18,12 +23,14 @@ type AuthServiceDependencies struct {
 	fx.In
 
 	Session  *session.Session
+	Logger   *logger.ZeroLog
 	AuthRepo *repository.AuthRepository
 }
 
 func NewAuthService(deps AuthServiceDependencies) *AuthService {
 	return &AuthService{
 		session:  deps.Session,
+		log:      deps.Logger,
 		authRepo: deps.AuthRepo,
 	}
 }
@@ -50,7 +57,8 @@ func (a *AuthService) Authenticated(ctx *fiber.Ctx) error {
 	}
 
 	userAttributes, err := a.authRepo.GetUserAttributes(uid)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		a.log.Error("failed to get user attributes", "error", err)
 		return fiber.ErrUnauthorized
 	}
 

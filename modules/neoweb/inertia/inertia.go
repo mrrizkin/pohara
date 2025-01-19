@@ -103,13 +103,38 @@ func (i *Inertia) EncryptHistory(ctx *fiber.Ctx) error {
 	return nil
 }
 
+// ClearHistory clears the history
+func (i *Inertia) ClearHistory(ctx *fiber.Ctx) error {
+	c, ok := ctx.Locals("inertia_context").(context.Context)
+	if !ok {
+		r, err := adaptor.ConvertRequest(ctx, true)
+		if err != nil {
+			return err
+		}
+		c = r.Context()
+	}
+
+	c = gonertia.ClearHistory(c)
+	ctx.Locals("inertia_context", c)
+	return nil
+}
+
+// EncryptHistoryMiddleware provides middleware for encrypting history
+func (i *Inertia) EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
+	if err := i.EncryptHistory(ctx); err != nil {
+		return err
+	}
+
+	return ctx.Next()
+}
+
 // Middleware provides Inertia middleware for Fiber
 func (i *Inertia) Middleware() fiber.Handler {
 	return adaptor.HTTPMiddleware(i.core.Middleware)
 }
 
 // Redirect redirects to the given URL
-func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status int) error {
+func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status ...int) error {
 	r, err := adaptor.ConvertRequest(ctx, true)
 	if err != nil {
 		return err
@@ -120,12 +145,12 @@ func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status int) error {
 	}
 
 	w := newResponseWriter()
-	i.core.Redirect(w, r, url, status)
+	i.core.Redirect(w, r, url, status...)
 	return writeResponse(ctx, w)
 }
 
 // Location redirect to the given external URL
-func (i *Inertia) Location(ctx *fiber.Ctx, url string) error {
+func (i *Inertia) Location(ctx *fiber.Ctx, url string, status ...int) error {
 	r, err := adaptor.ConvertRequest(ctx, true)
 	if err != nil {
 		return err
@@ -136,12 +161,12 @@ func (i *Inertia) Location(ctx *fiber.Ctx, url string) error {
 	}
 
 	w := newResponseWriter()
-	i.core.Location(w, r, url)
+	i.core.Location(w, r, url, status...)
 	return writeResponse(ctx, w)
 }
 
 // Back redirects to the previous URL
-func (i *Inertia) Back(ctx *fiber.Ctx) error {
+func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
 	r, err := adaptor.ConvertRequest(ctx, true)
 	if err != nil {
 		return err
@@ -152,7 +177,7 @@ func (i *Inertia) Back(ctx *fiber.Ctx) error {
 	}
 
 	w := newResponseWriter()
-	i.core.Back(w, r)
+	i.core.Back(w, r, status...)
 	return writeResponse(ctx, w)
 }
 

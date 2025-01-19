@@ -10,7 +10,6 @@ import (
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
-	"github.com/mrrizkin/pohara/modules/common/response"
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/validator"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
@@ -51,6 +50,10 @@ func NewAuthController(deps AuthControllerDependencies) *AuthController {
 }
 
 func (c *AuthController) LoginPage(ctx *fiber.Ctx) error {
+	if err := c.authService.Authenticated(ctx); err == nil {
+		return ctx.Redirect("/_/")
+	}
+
 	return c.inertia.Render(ctx, "auth/login", gonertia.Props{})
 }
 
@@ -80,7 +83,7 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	}
 
 	// compore the password
-	if match, err := c.hash.Compare(user.Password, input.Password); !match || err != nil {
+	if match, err := c.hash.Compare(input.Password, user.Password); !match || err != nil {
 		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
 		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
@@ -93,7 +96,7 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.JSON(response.SuccessMsg("login successfully"))
+	return c.inertia.Redirect(ctx, "/_/")
 }
 
 func (c *AuthController) Register(ctx *fiber.Ctx) error {
@@ -101,12 +104,12 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 }
 
 func (c *AuthController) Logout(ctx *fiber.Ctx) error {
-	err := c.authService.Logout(ctx)
-	if err != nil {
+	if err := c.authService.Logout(ctx); err != nil {
 		cause := "error logout"
 		c.log.Error(cause, "error", err)
 		return err
 	}
 
-	return ctx.JSON(response.SuccessMsg("logout successfully"))
+	c.inertia.ClearHistory(ctx)
+	return c.inertia.Redirect(ctx, "/_/auth/login")
 }
