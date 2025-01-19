@@ -3,7 +3,9 @@ import { router } from "@inertiajs/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { request } from "@/lib/request";
+import loginCoverImageThumb from "@/assets/image/login-cover-thumb.png";
+import loginCoverImage from "@/assets/image/login-cover.png";
+
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import loginCoverImage from "../assets/image/login-cover.png"
+import { LazyImage } from "@/components/lazy-image";
 
 const loginFormSchema = z.object({
 	email: z.string().email(),
@@ -31,12 +33,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 		defaultValues,
 	});
 
-	async function onSubmit(data: LoginFormValues) {
-		let response = await request.post("/_/auth/login", data);
-		if (response.data) {
-			console.log(response.data);
-			router.visit("/_/");
-		}
+	function onSubmit(data: LoginFormValues) {
+		router.post("/_/auth/login", data);
 	}
 
 	return (
@@ -125,9 +123,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 							</div>
 						</form>
 					</Form>
-					<div className="relative hidden bg-muted md:block">
-						<img src={loginCoverImage} alt="Image" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" crossOrigin="" />
-					</div>
+					<LazyImage
+						src={loginCoverImage}
+						thumbnailSrc={loginCoverImageThumb}
+						alt="Image"
+						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+						objectFit="cover"
+						crossOrigin="anonymous"
+					/>
 				</CardContent>
 			</Card>
 			<div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
