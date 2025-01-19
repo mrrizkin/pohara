@@ -54,7 +54,7 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		setting.Get("/notifications", deps.Setting.NotificationsPage).Name("notifications")
 		setting.Get("/display", deps.Setting.DisplayPage).Name("display")
 
-		r.Get("*", func(ctx *fiber.Ctx) error {
+		webAdmin.Get("*", func(ctx *fiber.Ctx) error {
 			return deps.Inertia.Render(ctx, "error/not-found", gonertia.Props{})
 		}).Name("error.not-found")
 	}, "web.")
