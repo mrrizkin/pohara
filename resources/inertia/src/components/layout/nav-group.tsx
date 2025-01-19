@@ -1,3 +1,4 @@
+import { Link, usePage } from "@inertiajs/react";
 import { ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 
@@ -20,7 +21,7 @@ import { NavCollapsible, type NavGroup, NavItem, NavLink } from "./types";
 
 export function NavGroup({ title, items }: NavGroup) {
 	const { state } = useSidebar();
-	const href = window.location.href;
+	const { url: href } = usePage();
 
 	return (
 		<SidebarGroup>
@@ -47,11 +48,11 @@ const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
 	return (
 		<SidebarMenuItem>
 			<SidebarMenuButton asChild isActive={checkIsActive(href, item)} tooltip={item.title}>
-				<a href={item.url} onClick={() => setOpenMobile(false)}>
+				<Link href={item.url} onClick={() => setOpenMobile(false)}>
 					{item.icon && <item.icon />}
 					<span>{item.title}</span>
 					{item.badge && <NavBadge>{item.badge}</NavBadge>}
-				</a>
+				</Link>
 			</SidebarMenuButton>
 		</SidebarMenuItem>
 	);
@@ -75,11 +76,11 @@ const SidebarMenuCollapsible = ({ item, href }: { item: NavCollapsible; href: st
 						{item.items.map((subItem) => (
 							<SidebarMenuSubItem key={subItem.title}>
 								<SidebarMenuSubButton asChild isActive={checkIsActive(href, subItem)}>
-									<a href={subItem.url} onClick={() => setOpenMobile(false)}>
+									<Link href={subItem.url} onClick={() => setOpenMobile(false)}>
 										{subItem.icon && <subItem.icon />}
 										<span>{subItem.title}</span>
 										{subItem.badge && <NavBadge>{subItem.badge}</NavBadge>}
-									</a>
+									</Link>
 								</SidebarMenuSubButton>
 							</SidebarMenuSubItem>
 						))}
@@ -109,11 +110,11 @@ const SidebarMenuCollapsedDropdown = ({ item, href }: { item: NavCollapsible; hr
 					<DropdownMenuSeparator />
 					{item.items.map((sub) => (
 						<DropdownMenuItem key={`${sub.title}-${sub.url}`} asChild>
-							<a href={sub.url} className={`${checkIsActive(href, sub) ? "bg-secondary" : ""}`}>
+							<Link href={sub.url} className={`${checkIsActive(href, sub) ? "bg-secondary" : ""}`}>
 								{sub.icon && <sub.icon />}
 								<span className="max-w-52 text-wrap">{sub.title}</span>
 								{sub.badge && <span className="ml-auto text-xs">{sub.badge}</span>}
-							</a>
+							</Link>
 						</DropdownMenuItem>
 					))}
 				</DropdownMenuContent>
