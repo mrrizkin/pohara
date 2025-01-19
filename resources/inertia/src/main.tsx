@@ -1,10 +1,21 @@
 import { createInertiaApp } from "@inertiajs/react";
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
+import { registerSW } from "virtual:pwa-register";
 
 import "@/assets/css/index.css";
 
 import { Loading } from "@/components/loading";
+
+const intervalMS = 60 * 60 * 1000;
+registerSW({
+	onRegistered(r) {
+		r &&
+			setInterval(() => {
+				r.update();
+			}, intervalMS);
+	},
+});
 
 createInertiaApp({
 	resolve: function (name) {
