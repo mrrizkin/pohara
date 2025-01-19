@@ -38,14 +38,14 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 
 		setup := webAdmin.Group("/setup").Name("setup.")
 		setup.Get("/", deps.Setup.Index).Name("index")
+		setup.Post("/", deps.Setup.Setup).Name("setup")
 
 		auth := webAdmin.Group("/auth").Name("auth.")
 		auth.Get("/login", deps.Auth.LoginPage).Name("login")
 		auth.Post("/login", deps.Auth.Login).Name("login")
 		auth.Get("/register", deps.Auth.RegisterPage).Name("register")
 		auth.Post("/register", deps.Auth.Register).Name("register")
-		auth.Post("/logout", deps.AuthMiddleware.Authenticated, deps.Auth.Logout).
-			Name("auth.logout")
+		auth.Post("/logout", deps.AuthMiddleware.Authenticated, deps.Auth.Logout).Name("logout")
 
 		setting := webAdmin.Group("/settings", deps.AuthMiddleware.Authenticated).Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")

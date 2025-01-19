@@ -1,10 +1,18 @@
-import { Mail, Settings, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, Settings, User } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export function FinishWizard() {
+interface FinishWizardProps extends React.ComponentProps<"div"> {
+	disablePrevious?: boolean;
+	disableNext?: boolean;
+	handleNext?: () => void;
+	handlePrevious?: () => void;
+}
+
+export function FinishWizard({ disableNext, disablePrevious, handleNext, handlePrevious }: FinishWizardProps) {
 	return (
 		<div className="flex flex-col items-center justify-center gap-4">
 			<h1 className="text-2xl font-bold tracking-tight">Wizard Summary</h1>
@@ -129,6 +137,18 @@ export function FinishWizard() {
 					</Card>
 				</TabsContent>
 			</Tabs>
+
+			<div className="mt-6 flex justify-between">
+				<Button variant="outline" onClick={handlePrevious} disabled={disablePrevious}>
+					<ChevronLeft className="mr-2 h-4 w-4" />
+					Previous
+				</Button>
+
+				<Button onClick={handleNext} disabled={disableNext}>
+					Next
+					<ChevronRight className="ml-2 h-4 w-4" />
+				</Button>
+			</div>
 		</div>
 	);
 }

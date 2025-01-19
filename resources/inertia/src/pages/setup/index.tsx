@@ -1,9 +1,10 @@
-import { Head } from "@inertiajs/react";
-import { ChevronLeft, ChevronRight, Flag, Hand, Mail, Settings, User } from "lucide-react";
+import { Head, router } from "@inertiajs/react";
+import { Flag, Hand, Mail, Settings, User } from "lucide-react";
 import React, { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { request } from "@/lib/request";
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 import { BaseLayout } from "@/components/layout/base";
 
@@ -18,39 +19,19 @@ import { WelcomeWizard } from "./components/welcome";
 export default function SetupWizard() {
 	const [currentStep, setCurrentStep] = useState(1);
 	const [processing, setProcessing] = useState(false);
+	const [setupState, setSetupState] = useState({});
 
-	const steps = [
-		{
-			icon: <Hand className="h-5 w-5" />,
-			content: <WelcomeWizard />,
-		},
-		{
-			icon: <User className="h-5 w-5" />,
-			content: <UserSetupForm />,
-		},
-		{
-			icon: <Mail className="h-5 w-5" />,
-			content: <EmailSetupForm />,
-		},
-		{
-			icon: <Settings className="h-5 w-5" />,
-			content: <SiteSetupForm />,
-		},
-		{
-			icon: <Flag className="h-5 w-5" />,
-			content: <FinishWizard />,
-		},
-	];
-
-	const handleSubmit = () => {
+	async function handleSubmit() {
 		setProcessing(true);
 		// Simulate API call
-		setTimeout(() => {
+		let response = await request.post("/_/setup", setupState);
+		if (response.status === 200) {
 			setProcessing(false);
-			// Show success message
-			alert("Setup completed successfully!");
-		}, 2000);
-	};
+			router.visit("/_/");
+		} else {
+			setProcessing(false);
+		}
+	}
 
 	const handleNext = () => {
 		if (currentStep < steps.length) {
@@ -63,6 +44,68 @@ export default function SetupWizard() {
 			setCurrentStep(currentStep - 1);
 		}
 	};
+
+	const steps = [
+		{
+			icon: <Hand className="h-5 w-5" />,
+			content: <WelcomeWizard handleNext={handleNext} />,
+		},
+		{
+			icon: <User className="h-5 w-5" />,
+			content: (
+				<UserSetupForm
+					onFormSubmit={(user) =>
+						setSetupState({
+							...setupState,
+							admin_user: user,
+						})
+					}
+					handleNext={handleNext}
+					handlePrevious={handleBack}
+					disablePrevious={processing}
+					disableNext={processing}
+				/>
+			),
+		},
+		{
+			icon: <Mail className="h-5 w-5" />,
+			content: (
+				<EmailSetupForm
+					onFormSubmit={(email) =>
+						setSetupState({
+							...setupState,
+							email: email,
+						})
+					}
+					handleNext={handleNext}
+					handlePrevious={handleBack}
+					disablePrevious={processing}
+					disableNext={processing}
+				/>
+			),
+		},
+		{
+			icon: <Settings className="h-5 w-5" />,
+			content: (
+				<SiteSetupForm
+					onFormSubmit={(site) =>
+						setSetupState({
+							...setupState,
+							site: site,
+						})
+					}
+					handleNext={handleNext}
+					handlePrevious={handleBack}
+					disablePrevious={processing}
+					disableNext={processing}
+				/>
+			),
+		},
+		{
+			icon: <Flag className="h-5 w-5" />,
+			content: <FinishWizard handleNext={handleSubmit} handlePrevious={handleBack} disableNext={processing} disablePrevious={processing} />,
+		},
+	];
 
 	return (
 		<BaseLayout>
@@ -96,26 +139,6 @@ export default function SetupWizard() {
 					</CardHeader>
 
 					<CardContent>{steps[currentStep - 1].content}</CardContent>
-
-					<CardFooter className="flex justify-between">
-						<Button variant="outline" onClick={handleBack} disabled={currentStep === 1 || processing}>
-							<ChevronLeft className="mr-2 h-4 w-4" />
-							Previous
-						</Button>
-
-						<Button onClick={currentStep === steps.length ? handleSubmit : handleNext} disabled={processing}>
-							{processing ? (
-								"Processing..."
-							) : currentStep === steps.length ? (
-								"Complete Setup"
-							) : (
-								<>
-									Next
-									<ChevronRight className="ml-2 h-4 w-4" />
-								</>
-							)}
-						</Button>
-					</CardFooter>
 				</Card>
 			</div>
 		</BaseLayout>

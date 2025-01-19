@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { cn } from "@/lib/utils";
 
-import { toast } from "@/hooks/use-toast";
-
+import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,17 +64,23 @@ const defaultValues: EmailSetupFormValues = {
 	},
 };
 
-export function EmailSetupForm({ className, ...props }: React.ComponentProps<"div">) {
+interface EmailSetupFormProps extends React.ComponentProps<"div"> {
+	onFormSubmit: (values: EmailSetupFormValues) => void;
+	disablePrevious?: boolean;
+	disableNext?: boolean;
+	handleNext?: () => void;
+	handlePrevious?: () => void;
+}
+
+export function EmailSetupForm({ className, onFormSubmit, disableNext, disablePrevious, handleNext, handlePrevious, ...props }: EmailSetupFormProps) {
 	const form = useForm<EmailSetupFormValues>({
 		resolver: zodResolver(emailSetupFormSchema),
 		defaultValues,
 	});
 
 	async function onSubmit(data: EmailSetupFormValues) {
-		toast({
-			title: "You submitted the following values:",
-			description: <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">{JSON.stringify(data, null, 2)}</pre>,
-		});
+		onFormSubmit(data);
+		handleNext?.();
 	}
 
 	return (
@@ -278,6 +284,18 @@ export function EmailSetupForm({ className, ...props }: React.ComponentProps<"di
 								/>
 							</>
 						)}
+					</div>
+
+					<div className="mt-6 flex justify-between">
+						<Button variant="outline" onClick={handlePrevious} disabled={disablePrevious}>
+							<ChevronLeft className="mr-2 h-4 w-4" />
+							Previous
+						</Button>
+
+						<Button disabled={disableNext}>
+							Next
+							<ChevronRight className="ml-2 h-4 w-4" />
+						</Button>
 					</div>
 				</form>
 			</Form>

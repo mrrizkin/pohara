@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { cn } from "@/lib/utils";
 
-import { toast } from "@/hooks/use-toast";
-
+import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
@@ -29,17 +29,23 @@ const defaultValues: SiteSetupFormValues = {
 	locale: "",
 };
 
-export function SiteSetupForm({ className, ...props }: React.ComponentProps<"div">) {
+interface SiteSetupFormProps extends React.ComponentProps<"div"> {
+	onFormSubmit: (values: SiteSetupFormValues) => void;
+	disablePrevious?: boolean;
+	disableNext?: boolean;
+	handleNext?: () => void;
+	handlePrevious?: () => void;
+}
+
+export function SiteSetupForm({ className, onFormSubmit, disableNext, disablePrevious, handleNext, handlePrevious, ...props }: SiteSetupFormProps) {
 	const form = useForm<SiteSetupFormValues>({
 		resolver: zodResolver(siteSetupFormSchema),
 		defaultValues,
 	});
 
 	async function onSubmit(data: SiteSetupFormValues) {
-		toast({
-			title: "You submitted the following values:",
-			description: <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">{JSON.stringify(data, null, 2)}</pre>,
-		});
+		onFormSubmit(data);
+		handleNext?.();
 	}
 
 	return (
@@ -135,6 +141,18 @@ export function SiteSetupForm({ className, ...props }: React.ComponentProps<"div
 								</FormItem>
 							)}
 						/>
+					</div>
+
+					<div className="mt-6 flex justify-between">
+						<Button variant="outline" onClick={handlePrevious} disabled={disablePrevious}>
+							<ChevronLeft className="mr-2 h-4 w-4" />
+							Previous
+						</Button>
+
+						<Button disabled={disableNext}>
+							Next
+							<ChevronRight className="ml-2 h-4 w-4" />
+						</Button>
 					</div>
 				</form>
 			</Form>
