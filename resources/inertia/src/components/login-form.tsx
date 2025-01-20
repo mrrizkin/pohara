@@ -55,7 +55,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 										<FormItem>
 											<FormLabel>Email</FormLabel>
 											<FormControl>
-												<Input placeholder="m@example.com" {...field} />
+												<Input placeholder="m@example.com" {...field} autoComplete="off" />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -73,7 +73,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 												</a>
 											</div>
 											<FormControl>
-												<Input {...field} type="password" />
+												<Input {...field} type="password" autoComplete="current-password" />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
