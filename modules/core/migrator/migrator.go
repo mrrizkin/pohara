@@ -133,9 +133,9 @@ func (m *Migrator) Migrate() error {
 		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
 	case "pgsql", "postgres", "postgresql":
 		dialect = &migration.PostgresDialect{}
-	case "mysql", "mariadb":
+	case "mysql", "mariadb", "maria":
 		dialect = &migration.MySqlDialect{}
-	case "sqlite":
+	case "sqlite", "sqlite3", "file":
 		dialect = &migration.SQLiteDialect{}
 	}
 
@@ -236,9 +236,9 @@ func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
 	case "pgsql", "postgres", "postgresql":
 		dialect = &migration.PostgresDialect{}
-	case "mysql", "mariadb":
+	case "mysql", "mariadb", "maria":
 		dialect = &migration.MySqlDialect{}
-	case "sqlite":
+	case "sqlite", "sqlite3", "file":
 		dialect = &migration.SQLiteDialect{}
 	}
 
