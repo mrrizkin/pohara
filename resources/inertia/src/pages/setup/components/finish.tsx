@@ -14,13 +14,15 @@ interface FinishWizardProps extends React.ComponentProps<"div"> {
 
 export function FinishWizard({ disableNext, disablePrevious, handleNext, handlePrevious }: FinishWizardProps) {
 	return (
-		<div className="flex flex-col items-center justify-center gap-4">
-			<h1 className="text-2xl font-bold tracking-tight">Wizard Summary</h1>
-			<p className="text-center text-muted-foreground">
+		<div className="flex flex-col justify-center gap-4">
+      <div className="flex flex-col items-center text-center">
+        <h1 className="text-2xl font-bold">Wizard Summary</h1>
+        <p className="text-balance text-muted-foreground">
 				Here is a summary of what you have configured.
 				<br />
 				Click Complete Setup to finish setting up your app.
-			</p>
+        </p>
+      </div>
 
 			<Tabs defaultValue="user" className="w-full">
 				<div className="flex w-full items-center justify-center">
