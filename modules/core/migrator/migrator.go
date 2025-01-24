@@ -383,7 +383,7 @@ func (m *Migrator) CreateMigration(name string) error {
 const migrationTemplate = `package migration
 
 import (
-	"gorm.io/gorm"
+	"github.com/mrrizkin/pohara/modules/core/migration"
 )
 
 type %s struct{}
@@ -392,11 +392,11 @@ func (m *%s) ID() string {
 	return "%s"
 }
 
-func (m *%s) Up(tx *gorm.DB) error {
-	return nil
+func (m *%s) Up(schema *migration.Schema) {
+	// your migration schema here
 }
 
-func (m *%s) Down(tx *gorm.DB) error {
-	return nil
+func (m *%s) Down(schema *migration.Schema) {
+	// your rollback migration here
 }
 `

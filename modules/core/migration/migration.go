@@ -181,6 +181,10 @@ func (s *Schema) buildColumn(col Column) string {
 	return strings.Join(parts, " ")
 }
 
+func (s *Schema) Raw(statement string) {
+	s.statements = append(s.statements, statement)
+}
+
 func (s *Schema) Statement() []string {
 	return s.statements
 }
