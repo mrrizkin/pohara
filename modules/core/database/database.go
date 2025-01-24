@@ -18,14 +18,14 @@ type GormDB struct {
 
 type GormDBDriver interface {
 	DSN() string
-	Connect(cfg *config.Database) (*gorm.DB, error)
+	Connect(cfg *config.Config) (*gorm.DB, error)
 }
 
 type GormDBDependencies struct {
 	fx.In
 
-	ConfigDB *config.Database
-	Logger   *logger.ZeroLog
+	Config *config.Config
+	Logger *logger.ZeroLog
 }
 
 func NewGormDB(
@@ -33,19 +33,19 @@ func NewGormDB(
 	deps GormDBDependencies,
 ) (*GormDB, error) {
 	var driver GormDBDriver
-	switch deps.ConfigDB.DRIVER {
+	switch deps.Config.Database.Driver {
 	case "mysql", "mariadb", "maria":
-		driver = provider.NewMysql(deps.ConfigDB)
+		driver = provider.NewMysql(deps.Config)
 	case "pgsql", "postgres", "postgresql":
-		driver = provider.NewPostgres(deps.ConfigDB)
+		driver = provider.NewPostgres(deps.Config)
 	case "sqlite", "sqlite3", "file":
-		driver = provider.NewSqlite(deps.ConfigDB, deps.Logger)
+		driver = provider.NewSqlite(deps.Config, deps.Logger)
 	default:
-		return nil, fmt.Errorf("unknown database driver: %s", deps.ConfigDB.DRIVER)
+		return nil, fmt.Errorf("unknown database driver: %s", deps.Config.Database.Driver)
 
 	}
 
-	db, err := driver.Connect(deps.ConfigDB)
+	db, err := driver.Connect(deps.Config)
 	if err != nil {
 		return nil, err
 	}

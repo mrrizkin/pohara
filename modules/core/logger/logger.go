@@ -18,13 +18,13 @@ type ZeroLog struct {
 	*zerolog.Logger
 }
 
-func NewZeroLog(config *config.App) (*ZeroLog, error) {
+func NewZeroLog(config *config.Config) (*ZeroLog, error) {
 	var writers []io.Writer
 
-	if config.LOG_CONSOLE {
+	if config.Log.Console {
 		writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
-	if config.LOG_FILE {
+	if config.Log.File {
 		rf, err := rollingFile(config)
 		if err != nil {
 			return nil, err
@@ -33,7 +33,7 @@ func NewZeroLog(config *config.App) (*ZeroLog, error) {
 	}
 	mw := io.MultiWriter(writers...)
 
-	switch config.LOG_LEVEL {
+	switch config.Log.Level {
 	case "panic":
 		zerolog.SetGlobalLevel(zerolog.PanicLevel)
 	case "fatal":
@@ -57,13 +57,13 @@ func NewZeroLog(config *config.App) (*ZeroLog, error) {
 
 	logger.Info(
 		"logging configured",
-		"fileLogging", config.LOG_FILE,
-		"jsonLogOutput", config.LOG_JSON,
-		"logDirectory", config.LOG_DIR,
-		"fileName", config.APP_NAME+".log",
-		"maxSizeMB", config.LOG_MAX_SIZE,
-		"maxBackups", config.LOG_MAX_BACKUP,
-		"maxAgeInDays", config.LOG_MAX_AGE,
+		"fileLogging", config.Log.File,
+		"jsonLogOutput", config.Log.Json,
+		"logDirectory", config.Log.Dir,
+		"fileName", config.App.Name+".log",
+		"maxSizeMB", config.Log.MaxSize,
+		"maxBackups", config.Log.MaxBackup,
+		"maxAgeInDays", config.Log.MaxAge,
 	)
 
 	return &logger, nil
@@ -306,16 +306,16 @@ func (z *ZeroLog) argsParser(event *zerolog.Event, args ...interface{}) *zerolog
 	return event
 }
 
-func rollingFile(c *config.App) (io.Writer, error) {
-	err := os.MkdirAll(c.LOG_DIR, 0744)
+func rollingFile(c *config.Config) (io.Writer, error) {
+	err := os.MkdirAll(c.Log.Dir, 0744)
 	if err != nil {
 		return nil, err
 	}
 
 	return &lumberjack.Logger{
-		Filename:   path.Join(c.LOG_DIR, c.APP_NAME+".log"),
-		MaxBackups: c.LOG_MAX_BACKUP, // files
-		MaxSize:    c.LOG_MAX_SIZE,   // megabytes
-		MaxAge:     c.LOG_MAX_AGE,    // days
+		Filename:   path.Join(c.Log.Dir, c.App.Name+".log"),
+		MaxBackups: c.Log.MaxBackup, // files
+		MaxSize:    c.Log.MaxSize,   // megabytes
+		MaxAge:     c.Log.MaxAge,    // days
 	}, nil
 }

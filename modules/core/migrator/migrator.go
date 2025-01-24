@@ -45,7 +45,7 @@ type MigrationLoaderDependencies struct {
 
 type Migrator struct {
 	db         *database.GormDB
-	config     *config.Database
+	config     *config.Config
 	migrations []Migration
 }
 
@@ -53,7 +53,7 @@ type MigratorDependencies struct {
 	fx.In
 
 	Db     *database.GormDB
-	Config *config.Database
+	Config *config.Config
 }
 
 var Module = fx.Module("migrator",
@@ -128,9 +128,9 @@ func (m *Migrator) Migrate() error {
 	}
 
 	var dialect migration.Dialect
-	switch m.config.DRIVER {
+	switch m.config.Database.Driver {
 	default:
-		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
+		return fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
 	case "pgsql", "postgres", "postgresql":
 		dialect = &migration.PostgresDialect{}
 	case "mysql", "mariadb", "maria":
@@ -231,9 +231,9 @@ func (m *Migrator) RollbackAll() error {
 
 func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 	var dialect migration.Dialect
-	switch m.config.DRIVER {
+	switch m.config.Database.Driver {
 	default:
-		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
+		return fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
 	case "pgsql", "postgres", "postgresql":
 		dialect = &migration.PostgresDialect{}
 	case "mysql", "mariadb", "maria":

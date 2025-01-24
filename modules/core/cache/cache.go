@@ -9,10 +9,10 @@ import (
 
 type Cache struct {
 	cache  *ristretto.Cache[string, interface{}]
-	config *config.App
+	config *config.Config
 }
 
-func NewRessetto(config *config.App) (*Cache, error) {
+func NewRessetto(config *config.Config) (*Cache, error) {
 	ristrettoConfig := ristretto.Config[string, interface{}]{
 		NumCounters: 1e7,     // number of keys to track frequency of (10M).
 		MaxCost:     1 << 30, // maximum cost of cache (1GB).

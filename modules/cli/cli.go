@@ -33,11 +33,11 @@ var Module = fx.Module("cli",
 	fx.Invoke(Execute),
 )
 
-func New(config *config.App, logger *logger.ZeroLog) *CLI {
+func New(config *config.Config, logger *logger.ZeroLog) *CLI {
 	return &CLI{
 		command: &cobra.Command{
-			Use:   config.APP_NAME,
-			Short: config.APP_NAME + " CLI",
+			Use:   config.App.Name,
+			Short: config.App.Name + " CLI",
 		},
 		log: logger,
 	}

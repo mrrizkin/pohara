@@ -11,21 +11,21 @@ import (
 )
 
 type Memory struct {
-	config *config.Session
+	config *config.Config
 }
 
-func NewMemory(config *config.Session) *Memory {
+func NewMemory(config *config.Config) *Memory {
 	return &Memory{config: config}
 }
 
 func (m *Memory) Setup() (fiber.Storage, error) {
-	switch m.config.DRIVER {
+	switch m.config.Session.Driver {
 	case "memory":
 		return createMemoryStorage()
 	case "redis", "valkey":
-		return nil, fmt.Errorf("driver %s is not yet supported", m.config.DRIVER)
+		return nil, fmt.Errorf("driver %s is not yet supported", m.config.Session.Driver)
 	default:
-		return nil, fmt.Errorf("unknown database driver: %s", m.config.DRIVER)
+		return nil, fmt.Errorf("unknown database driver: %s", m.config.Session.Driver)
 	}
 }
 

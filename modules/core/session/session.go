@@ -24,19 +24,17 @@ type Session struct {
 
 func NewSession(
 	lc fx.Lifecycle,
-	config *config.App,
-	dbConfig *config.Database,
-	sessionConfig *config.Session,
+	config *config.Config,
 ) (*Session, error) {
 	var driver SessionProvider
 
-	switch sessionConfig.DRIVER {
+	switch config.Session.Driver {
 	case "database":
-		driver = provider.NewDatabase(dbConfig)
+		driver = provider.NewDatabase(config)
 	case "file":
 		driver = provider.NewFile()
 	case "redis", "valkey", "memory":
-		driver = provider.NewMemory(sessionConfig)
+		driver = provider.NewMemory(config)
 	default:
 		driver = provider.NewFile()
 	}
@@ -50,10 +48,10 @@ func NewSession(
 		Store: session.New(session.Config{
 			Storage:        storage,
 			Expiration:     24 * time.Hour,
-			KeyLookup:      fmt.Sprintf("cookie:%s_session_key", config.APP_NAME),
-			CookieHTTPOnly: sessionConfig.HTTP_ONLY,
-			CookieSecure:   sessionConfig.SECURE,
-			CookieSameSite: sessionConfig.SAME_SITE,
+			KeyLookup:      fmt.Sprintf("cookie:%s_session_key", config.App.Name),
+			CookieHTTPOnly: config.Session.HttpOnly,
+			CookieSecure:   config.Session.Secure,
+			CookieSameSite: config.Session.SameSite,
 		}),
 		storage: storage,
 	}

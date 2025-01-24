@@ -1,11 +1,11 @@
 root = "."
-tmp_dir = "tmp"
+tmp_dir = "storage/app/bin"
 
 [build]
-bin = "./tmp/main run"
-cmd = "go build -o ./tmp/main ./main.go"
+bin = "./storage/app/bin/main run"
+cmd = "go build -o ./storage/app/bin/main ./main.go"
 delay = 1000
-exclude_dir = ["assets", "tmp", "vendor"]
+exclude_dir = ["assets", "storage", "resources/inertia"]
 exclude_file = []
 exclude_regex = [".*_templ.go"]
 exclude_unchanged = false

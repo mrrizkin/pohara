@@ -19,24 +19,24 @@ var Module = fx.Module("hashing",
 	fx.Provide(New),
 )
 
-func New(config *config.App) *Hashing {
+func New(config *config.Config) *Hashing {
 	var algo Algorithm
-	switch config.HASH_PROVIDER {
+	switch config.Hash.Provider {
 	case "argon2", "argon":
 		algo = algorithm.Argon2(
-			uint32(config.HASH_MEMORY),
-			uint32(config.HASH_ITERATIONS),
-			uint32(config.HASH_KEY_LEN),
-			uint32(config.HASH_SALT_LEN),
-			uint8(config.HASH_PARALLELISM),
+			uint32(config.Hash.Memory),
+			uint32(config.Hash.Iterations),
+			uint32(config.Hash.KeyLen),
+			uint32(config.Hash.SaltLen),
+			uint8(config.Hash.Parallelism),
 		)
 	default:
 		algo = algorithm.Argon2(
-			uint32(config.HASH_MEMORY),
-			uint32(config.HASH_ITERATIONS),
-			uint32(config.HASH_KEY_LEN),
-			uint32(config.HASH_SALT_LEN),
-			uint8(config.HASH_PARALLELISM),
+			uint32(config.Hash.Memory),
+			uint32(config.Hash.Iterations),
+			uint32(config.Hash.KeyLen),
+			uint32(config.Hash.SaltLen),
+			uint8(config.Hash.Parallelism),
 		)
 	}
 

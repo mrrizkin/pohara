@@ -27,31 +27,30 @@ type Inertia struct {
 type Dependencies struct {
 	fx.In
 
-	Config        *config.App
-	Vite          *vite.Vite
-	InertiaConfig *config.Inertia
+	Config *config.Config
+	Vite   *vite.Vite
 }
 
 // New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (*Inertia, error) {
 	options := make([]gonertia.Option, 0)
 
-	if deps.InertiaConfig.CONTAINER_ID != "" {
-		options = append(options, gonertia.WithContainerID(deps.InertiaConfig.CONTAINER_ID))
+	if deps.Config.Inertia.ContainerID != "" {
+		options = append(options, gonertia.WithContainerID(deps.Config.Inertia.ContainerID))
 	}
 
-	if deps.InertiaConfig.MANIFEST_PATH != "" {
+	if deps.Config.Inertia.ManifestPath != "" {
 		options = append(
 			options,
-			gonertia.WithVersion(getVersionFromManifest(deps.InertiaConfig.MANIFEST_PATH)),
+			gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)),
 		)
 	}
 
-	if deps.InertiaConfig.ENCRYPT_HISTORY {
-		options = append(options, gonertia.WithEncryptHistory(deps.InertiaConfig.ENCRYPT_HISTORY))
+	if deps.Config.Inertia.EncryptHistory {
+		options = append(options, gonertia.WithEncryptHistory(deps.Config.Inertia.EncryptHistory))
 	}
 
-	r, err := inertia.Entry.Open(deps.InertiaConfig.ENTRY_PATH)
+	r, err := inertia.Entry.Open(deps.Config.Inertia.EntryPath)
 	if err != nil {
 		return nil, err
 	}

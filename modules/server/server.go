@@ -28,7 +28,7 @@ import (
 type Dependencies struct {
 	fx.In
 
-	Config *config.App
+	Config *config.Config
 	Logger *logger.ZeroLog
 }
 
@@ -43,8 +43,8 @@ var Module = fx.Module("server",
 
 func NewServer(deps Dependencies) (*fiber.App, error) {
 	app := fiber.New(fiber.Config{
-		Prefork:               deps.Config.APP_PREFORK,
-		AppName:               deps.Config.APP_NAME,
+		Prefork:               deps.Config.App.Prefork,
+		AppName:               deps.Config.App.Name,
 		DisableStartupMessage: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
@@ -105,7 +105,7 @@ type SetupRouterDependecies struct {
 
 	App     *fiber.App
 	Session *session.Session
-	Config  *config.App
+	Config  *config.Config
 
 	WebRoutes []WebRouter `group:"web_router"`
 	ApiRoutes []ApiRouter `group:"api_router"`
@@ -125,17 +125,17 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	(WebRouters)(deps.WebRoutes).Register(
 		deps.App.Group("/",
 			csrf.New(csrf.Config{
-				KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF_COOKIE_NAME),
-				CookieName:        deps.Config.CSRF_COOKIE_NAME,
-				CookieSameSite:    deps.Config.CSRF_SAME_SITE,
-				CookieSecure:      deps.Config.CSRF_SECURE,
+				KeyLookup:         fmt.Sprintf("cookie:%s", deps.Config.CSRF.CookieName),
+				CookieName:        deps.Config.CSRF.CookieName,
+				CookieSameSite:    deps.Config.CSRF.SameSite,
+				CookieSecure:      deps.Config.CSRF.Secure,
 				CookieSessionOnly: true,
-				CookieHTTPOnly:    deps.Config.CSRF_HTTP_ONLY,
+				CookieHTTPOnly:    deps.Config.CSRF.HttpOnly,
 				SingleUseToken:    true,
-				Expiration:        time.Duration(deps.Config.CSRF_EXPIRATION) * time.Second,
+				Expiration:        time.Duration(deps.Config.CSRF.Expiration) * time.Second,
 				KeyGenerator:      utils.UUIDv4,
 				ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
-				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF_COOKIE_NAME),
+				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF.CookieName),
 				Session:           deps.Session.Store,
 				SessionKey:        "fiber.csrf.token",
 				HandlerContextKey: "fiber.csrf.handler",
@@ -147,15 +147,15 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	return deps.App
 }
 
-func StartServer(lx fx.Lifecycle, app *fiber.App, config *config.App, log *logger.ZeroLog) error {
+func StartServer(lx fx.Lifecycle, app *fiber.App, config *config.Config, log *logger.ZeroLog) error {
 	lx.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				if err := app.Listen(fmt.Sprintf(":%d", config.APP_PORT)); err != nil {
+				if err := app.Listen(fmt.Sprintf(":%d", config.App.Port)); err != nil {
 					log.Fatal("failed to start server", "error", err)
 				}
 			}()
-			log.Info("server started", "app_name", config.APP_NAME, "port", config.APP_PORT)
+			log.Info("server started", "app_name", config.App.Name, "port", config.App.Port)
 			return nil
 		},
 		OnStop: func(context.Context) error {
@@ -166,7 +166,7 @@ func StartServer(lx fx.Lifecycle, app *fiber.App, config *config.App, log *logge
 	return nil
 }
 
-func swagger(config *config.App) func(c *fiber.Ctx) error {
+func swagger(config *config.Config) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 
 		if config.IsProduction() {
@@ -186,7 +186,7 @@ func swagger(config *config.App) func(c *fiber.Ctx) error {
         <script id="api-reference" data-url="%s"></script>
         <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
     </body>
-</html>`, config.SWAGGER_PATH)
+</html>`, config.SwaggerPath)
 
 		return c.Type("html").Send([]byte(html))
 	}

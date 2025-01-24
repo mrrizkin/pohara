@@ -10,12 +10,12 @@ import (
 )
 
 type Sqlite struct {
-	config *config.Database
+	config *config.Config
 	log    *logger.ZeroLog
 }
 
 func NewSqlite(
-	config *config.Database,
+	config *config.Config,
 	logger *logger.ZeroLog,
 ) *Sqlite {
 	return &Sqlite{
@@ -25,10 +25,10 @@ func NewSqlite(
 }
 
 func (s *Sqlite) DSN() string {
-	return s.config.HOST
+	return s.config.Database.Host
 }
 
-func (s *Sqlite) Connect(cfg *config.Database) (*gorm.DB, error) {
+func (s *Sqlite) Connect(cfg *config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open(s.DSN()), &gorm.Config{
 		Logger: gormLogger.Default.LogMode(gormLogger.Silent),
 	})
