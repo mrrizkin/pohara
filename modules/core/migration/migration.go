@@ -1,382 +1,313 @@
 package migration
 
 import (
-	"fmt"
 	"strings"
 )
 
-// Dialect defines the interface for database-specific SQL generation
+// Dialect interface implementation
 type Dialect interface {
-	// Column type methods
+	// Column types
 	GetStringType(length int) string
 	GetIntegerType() string
 	GetBigIntegerType() string
 	GetTextType() string
 	GetTimestampType() string
 	GetBooleanType() string
+	GetEnumType(values []string) string
 	GetDecimalType(precision, scale int) string
-	GetJsonType() string
 	GetDateType() string
 	GetTimeType() string
+	GetJsonType() string
 	GetBinaryType() string
 	GetFloatType() string
 	GetUUIDType() string
 
-	// Constraint methods
-	WrapPrimaryKey(column string) string
-	WrapUnique(column string) string
-	WrapNullable(column string) string
-	WrapDefault(column, value string) string
+	// Constraints
+	GetPrimaryKey() string
+	GetUnique(column string) string
+	GetNullable(column string, nullable bool) string
+	GetDefault(column, value string) string
 
-	// Foreign key methods
-	GetForeignKeyConstraint(column, refTable, refColumn, onDelete, onUpdate string) string
-
-	// Index methods
-	CreateIndex(table, name string, columns []string, unique bool) string
+	// Table operations
+	CreateTableSQL(table string, columns []string) string
+	AddColumnSQL(table, column string) string
+	ModifyColumnSQL(table, column string) string
+	RenameColumnSQL(table, old, new string) string
+	DropColumnSQL(table, column string) string
+	DropTableSQL(table string) string
+	RenameTableSQL(old, new string) string
+	CreateIndexSQL(table, name string, columns []string, unique bool) string
+	DropIndexSQL(table, name string) string
 }
 
-// Column represents a database column definition
+// Column definition
 type Column struct {
-	NameField       string
-	TypeField       string
-	NullableField   bool
-	PrimaryField    bool
-	UniqueField     bool
-	DefaultField    *string
-	ReferencesField *Reference
+	Name      string
+	Type      string
+	Nullable  bool
+	Default   string
+	Unique    bool
+	Modify    bool
+	After     string
+	Length    int
+	Precision int
+	Scale     int
+	IsPrimary bool
 }
 
-// Reference represents a foreign key reference
-type Reference struct {
-	TableField    string
-	ColumnField   string
-	OnDeleteField string
-	OnUpdateField string
-}
-
-// Index represents a table index
-type Index struct {
-	NameField    string
-	ColumnsField []string
-	UniqueField  bool
-}
-
-// Schema represents the migration schema builder
-type Schema struct {
-	dialectData Dialect
-	createSql   []string
-}
-
-// Blueprint represents a table schema definition
+// Blueprint for table definition
 type Blueprint struct {
-	tableName    string
-	columnsData  []Column
-	indexesData  []Index
-	commandsData []string
-	dialectData  Dialect
+	TableName  string
+	Columns    []Column
+	Indexes    []index
+	Renames    []rename
+	Drops      []string
+	Modifies   []Column
+	IsCreating bool
+	dialect    Dialect
 }
 
-// NewSchema creates a new schema builder with the specified dialect
+type index struct {
+	Columns []string
+	Unique  bool
+	Name    string
+}
+
+type rename struct {
+	From string
+	To   string
+}
+
+type Schema struct {
+	dialect    Dialect
+	statements []string
+}
+
 func NewSchema(dialect Dialect) *Schema {
-	return &Schema{
-		dialectData: dialect,
+	return &Schema{dialect: dialect}
+}
+
+// Create a new table
+func (s *Schema) Create(table string, callback func(*Blueprint)) {
+	bp := &Blueprint{TableName: table, IsCreating: true, dialect: s.dialect}
+	callback(bp)
+
+	columns := []string{}
+	for _, col := range bp.Columns {
+		columns = append(columns, s.buildColumn(col))
+	}
+
+	sql := s.dialect.CreateTableSQL(table, columns)
+	s.statements = append(s.statements, sql)
+
+	for _, idx := range bp.Indexes {
+		s.statements = append(
+			s.statements,
+			s.dialect.CreateIndexSQL(table, idx.Name, idx.Columns, idx.Unique),
+		)
 	}
 }
 
-// Create creates a new blueprint for table creation
-func (s *Schema) Create(table string, fn func(*Blueprint)) *Schema {
-	blueprint := &Blueprint{
-		tableName:   table,
-		dialectData: s.dialectData,
+// Modify existing table
+func (s *Schema) Table(table string, callback func(*Blueprint)) {
+	bp := &Blueprint{TableName: table, dialect: s.dialect}
+	callback(bp)
+
+	// Handle column modifications
+	for _, modify := range bp.Modifies {
+		sql := s.dialect.ModifyColumnSQL(table, s.buildColumn(modify))
+		s.statements = append(s.statements, sql)
 	}
-	fn(blueprint)
-	s.createSql = append(s.createSql, blueprint.ToSQL())
-	return s
+
+	// Handle new columns
+	for _, col := range bp.Columns {
+		sql := s.dialect.AddColumnSQL(table, s.buildColumn(col))
+		s.statements = append(s.statements, sql)
+	}
+
+	// Handle renames
+	for _, rn := range bp.Renames {
+		sql := s.dialect.RenameColumnSQL(table, rn.From, rn.To)
+		s.statements = append(s.statements, sql)
+	}
+
+	// Handle drops
+	for _, drop := range bp.Drops {
+		sql := s.dialect.DropColumnSQL(table, drop)
+		s.statements = append(s.statements, sql)
+	}
+
+	// Handle index drops
+	for _, idx := range bp.Indexes {
+		if idx.Name != "" {
+			s.statements = append(s.statements, s.dialect.DropIndexSQL(table, idx.Name))
+		}
+	}
 }
 
-// Table modifies an existing table
-func (s *Schema) Table(table string, fn func(*Blueprint)) string {
-	blueprint := &Blueprint{
-		tableName:   table,
-		dialectData: s.dialectData,
-	}
-	fn(blueprint)
-	return blueprint.ToSQL()
+// Drop table
+func (s *Schema) Drop(table string) {
+	s.statements = append(s.statements, s.dialect.DropTableSQL(table))
 }
 
-// Column methods
-func (b *Blueprint) String(name string, length ...int) *Column {
-	l := 255
-	if len(length) > 0 {
-		l = length[0]
-	}
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetStringType(l),
-	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+// Rename table
+func (s *Schema) Rename(old, new string) {
+	s.statements = append(s.statements, s.dialect.RenameTableSQL(old, new))
 }
 
-func (b *Blueprint) Integer(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetIntegerType(),
+// Build column definition
+func (s *Schema) buildColumn(col Column) string {
+	parts := []string{col.Name, col.Type}
+
+	if !col.Nullable {
+		parts = append(parts, s.dialect.GetNullable(col.Name, false))
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+
+	if col.Default != "" {
+		parts = append(parts, s.dialect.GetDefault(col.Name, col.Default))
+	}
+
+	if col.Unique && !col.IsPrimary {
+		parts = append(parts, s.dialect.GetUnique(col.Name))
+	}
+	if col.IsPrimary {
+		parts = append(parts, s.dialect.GetPrimaryKey())
+	}
+
+	if col.After != "" {
+		parts = append(parts, "AFTER", col.After)
+	}
+
+	return strings.Join(parts, " ")
 }
 
-func (b *Blueprint) BigInteger(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetBigIntegerType(),
-	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+func (s *Schema) Statement() []string {
+	return s.statements
 }
 
-func (b *Blueprint) Text(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetTextType(),
+// Blueprint methods
+func (b *Blueprint) ID() {
+	col := Column{
+		Name:      "id",
+		Type:      b.dialect.GetBigIntegerType(),
+		IsPrimary: true,
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
 }
 
-func (b *Blueprint) Timestamp(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetTimestampType(),
+func (b *Blueprint) String(name string, length int) *ColumnBuilder {
+	col := Column{
+		Name:   name,
+		Type:   b.dialect.GetStringType(length),
+		Length: length,
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Boolean(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetBooleanType(),
+func (b *Blueprint) Text(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetTextType(),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Decimal(name string, precision, scale int) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetDecimalType(precision, scale),
+func (b *Blueprint) Json(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetJsonType(),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Float(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetFloatType(),
+func (b *Blueprint) Integer(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetIntegerType(),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Json(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetJsonType(),
+func (b *Blueprint) BigInteger(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetBigIntegerType(),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Date(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetDateType(),
+func (b *Blueprint) Boolean(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetBooleanType(),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
-func (b *Blueprint) Time(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetTimeType(),
+func (b *Blueprint) Enum(name string, values []string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetEnumType(values),
 	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
-}
-
-func (b *Blueprint) Binary(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetBinaryType(),
-	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
-}
-
-func (b *Blueprint) UUID(name string) *Column {
-	col := &Column{
-		NameField: name,
-		TypeField: b.dialectData.GetUUIDType(),
-	}
-	b.columnsData = append(b.columnsData, *col)
-	return col
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
 func (b *Blueprint) Timestamps() {
-	b.Timestamp("created_at").Nullable()
-	b.Timestamp("updated_at").Nullable()
-}
-
-func (b *Blueprint) SoftDeletes() {
-	b.Timestamp("deleted_at").Nullable()
-}
-
-// Column modifier methods
-func (c *Column) Nullable() *Column {
-	c.NullableField = true
-	return c
-}
-
-func (c *Column) Primary() *Column {
-	c.PrimaryField = true
-	return c
-}
-
-func (c *Column) Unique() *Column {
-	c.UniqueField = true
-	return c
-}
-
-func (c *Column) Default(value string) *Column {
-	c.DefaultField = &value
-	return c
-}
-
-func (c *Column) References(table string) *Column {
-	c.ReferencesField = &Reference{
-		TableField:  table,
-		ColumnField: "id",
-	}
-	return c
-}
-
-func (c *Column) On(column string) *Column {
-	if c.ReferencesField != nil {
-		c.ReferencesField.ColumnField = column
-	}
-	return c
-}
-
-func (c *Column) OnDelete(action string) *Column {
-	if c.ReferencesField != nil {
-		c.ReferencesField.OnDeleteField = action
-	}
-	return c
-}
-
-func (c *Column) OnUpdate(action string) *Column {
-	if c.ReferencesField != nil {
-		c.ReferencesField.OnUpdateField = action
-	}
-	return c
-}
-
-// Index methods
-func (b *Blueprint) Index(columns ...string) {
-	b.indexesData = append(b.indexesData, Index{
-		ColumnsField: columns,
-		UniqueField:  false,
-	})
-}
-
-func (b *Blueprint) Unique(columns ...string) {
-	b.indexesData = append(b.indexesData, Index{
-		ColumnsField: columns,
-		UniqueField:  true,
-	})
-}
-
-// Drop and rename methods
-func (b *Blueprint) DropColumn(name string) {
-	b.commandsData = append(b.commandsData, fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", b.tableName, name))
-}
-
-func (b *Blueprint) RenameColumn(from, to string) {
-	b.commandsData = append(b.commandsData, fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", b.tableName, from, to))
-}
-
-func (b *Blueprint) DropIndex(name string) {
-	b.commandsData = append(b.commandsData, fmt.Sprintf("DROP INDEX IF EXISTS %s", name))
-}
-
-func (b *Blueprint) DropForeign(columns ...string) {
-	constraintName := fmt.Sprintf("%s_%s_foreign", b.tableName, strings.Join(columns, "_"))
-	b.commandsData = append(b.commandsData, fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s", b.tableName, constraintName))
-}
-
-func (b *Blueprint) DropPrimary() {
-	b.commandsData = append(b.commandsData, fmt.Sprintf("ALTER TABLE %s DROP PRIMARY KEY", b.tableName))
-}
-
-func (b *Blueprint) ToSQL() string {
-	if len(b.commandsData) > 0 {
-		return strings.Join(b.commandsData, ";\n")
-	}
-
-	var cols []string
-	var constraints []string
-
-	for _, col := range b.columnsData {
-		colDef := fmt.Sprintf("%s %s", col.NameField, col.TypeField)
-
-		if !col.NullableField {
-			colDef += " " + b.dialectData.WrapNullable(col.NameField)
-		}
-
-		if col.PrimaryField {
-			colDef += " " + b.dialectData.WrapPrimaryKey(col.NameField)
-		}
-
-		if col.UniqueField {
-			colDef += " " + b.dialectData.WrapUnique(col.NameField)
-		}
-
-		if col.DefaultField != nil {
-			colDef += " " + b.dialectData.WrapDefault(col.NameField, *col.DefaultField)
-		}
-
-		if col.ReferencesField != nil {
-			constraint := b.dialectData.GetForeignKeyConstraint(
-				col.NameField,
-				col.ReferencesField.TableField,
-				col.ReferencesField.ColumnField,
-				col.ReferencesField.OnDeleteField,
-				col.ReferencesField.OnUpdateField,
-			)
-			constraints = append(constraints, constraint)
-		}
-
-		cols = append(cols, colDef)
-	}
-
-	for _, idx := range b.indexesData {
-		constraint := b.dialectData.CreateIndex(
-			b.tableName,
-			idx.NameField,
-			idx.ColumnsField,
-			idx.UniqueField,
-		)
-		constraints = append(constraints, constraint)
-	}
-
-	allDefs := append(cols, constraints...)
-	return fmt.Sprintf(
-		"CREATE TABLE %s (\n  %s\n);",
-		b.tableName,
-		strings.Join(allDefs, ",\n  "),
+	b.Columns = append(b.Columns,
+		Column{
+			Name:     "created_at",
+			Type:     b.dialect.GetTimestampType(),
+			Nullable: true,
+		},
+		Column{
+			Name:     "updated_at",
+			Type:     b.dialect.GetTimestampType(),
+			Nullable: true,
+		},
 	)
+}
+
+func (b *Blueprint) RenameColumn(old, new string) {
+	b.Renames = append(b.Renames, rename{From: old, To: new})
+}
+
+func (b *Blueprint) DropColumn(name string) {
+	b.Drops = append(b.Drops, name)
+}
+
+func (b *Blueprint) ModifyColumn(column Column) {
+	column.Modify = true
+	b.Modifies = append(b.Modifies, column)
+}
+
+// Column builder for fluent interface
+type ColumnBuilder struct {
+	col *Column
+}
+
+func (cb *ColumnBuilder) Nullable() *ColumnBuilder {
+	cb.col.Nullable = true
+	return cb
+}
+
+func (cb *ColumnBuilder) Default(value string) *ColumnBuilder {
+	cb.col.Default = value
+	return cb
+}
+
+func (cb *ColumnBuilder) Unique() *ColumnBuilder {
+	cb.col.Unique = true
+	return cb
+}
+
+func (cb *ColumnBuilder) After(column string) *ColumnBuilder {
+	cb.col.After = column
+	return cb
 }

@@ -5,103 +5,132 @@ import (
 	"strings"
 )
 
-// SQLiteDialect implements Dialect for SQLite
 type SQLiteDialect struct{}
 
-func (s *SQLiteDialect) GetStringType(length int) string {
+func (d *SQLiteDialect) GetStringType(length int) string {
 	return "TEXT"
 }
 
-func (s *SQLiteDialect) GetIntegerType() string {
+func (d *SQLiteDialect) GetIntegerType() string {
 	return "INTEGER"
 }
 
-func (s *SQLiteDialect) GetBigIntegerType() string {
+func (d *SQLiteDialect) GetBigIntegerType() string {
 	return "INTEGER"
 }
 
-func (s *SQLiteDialect) GetTextType() string {
+func (d *SQLiteDialect) GetTextType() string {
 	return "TEXT"
 }
 
-func (s *SQLiteDialect) GetTimestampType() string {
+func (d *SQLiteDialect) GetTimestampType() string {
 	return "DATETIME"
 }
 
-func (s *SQLiteDialect) GetBooleanType() string {
-	return "INTEGER"
+func (d *SQLiteDialect) GetBooleanType() string {
+	return "BOOLEAN"
 }
 
-func (s *SQLiteDialect) GetDecimalType(precision, scale int) string {
+func (d *SQLiteDialect) GetEnumType(values []string) string {
+	quotedValues := make([]string, len(values))
+	for i, v := range values {
+		quotedValues[i] = fmt.Sprintf("'%s'", v)
+	}
+	return fmt.Sprintf("TEXT CHECK (%s IN (%s))", "value", strings.Join(quotedValues, ", "))
+}
+
+func (d *SQLiteDialect) GetDecimalType(precision, scale int) string {
 	return "REAL"
 }
 
-func (s *SQLiteDialect) GetJsonType() string {
-	return "TEXT"
-}
-
-func (s *SQLiteDialect) GetDateType() string {
+func (d *SQLiteDialect) GetDateType() string {
 	return "DATE"
 }
 
-func (s *SQLiteDialect) GetTimeType() string {
+func (d *SQLiteDialect) GetTimeType() string {
 	return "TIME"
 }
 
-func (s *SQLiteDialect) GetBinaryType() string {
-	return "BLOB"
-}
-
-func (s *SQLiteDialect) GetFloatType() string {
-	return "REAL"
-}
-
-func (s *SQLiteDialect) GetUUIDType() string {
+func (d *SQLiteDialect) GetJsonType() string {
 	return "TEXT"
 }
 
-func (s *SQLiteDialect) WrapPrimaryKey(column string) string {
+func (d *SQLiteDialect) GetBinaryType() string {
+	return "BLOB"
+}
+
+func (d *SQLiteDialect) GetFloatType() string {
+	return "REAL"
+}
+
+func (d *SQLiteDialect) GetUUIDType() string {
+	return "TEXT"
+}
+
+func (d *SQLiteDialect) GetPrimaryKey() string {
 	return "PRIMARY KEY AUTOINCREMENT"
 }
 
-func (s *SQLiteDialect) WrapUnique(column string) string {
+func (d *SQLiteDialect) GetUnique(column string) string {
 	return "UNIQUE"
 }
 
-func (s *SQLiteDialect) WrapNullable(column string) string {
+func (d *SQLiteDialect) GetNullable(column string, nullable bool) string {
+	if nullable {
+		return "NULL"
+	}
 	return "NOT NULL"
 }
 
-func (s *SQLiteDialect) WrapDefault(column, value string) string {
-	switch strings.ToLower(value) {
-	case "true":
-		return "DEFAULT 1"
-	case "false":
-		return "DEFAULT 0"
-	default:
-		return fmt.Sprintf("DEFAULT %s", value)
-	}
+func (d *SQLiteDialect) GetDefault(column, value string) string {
+	return fmt.Sprintf("DEFAULT '%s'", value)
 }
 
-func (s *SQLiteDialect) GetForeignKeyConstraint(column, refTable, refColumn, onDelete, onUpdate string) string {
-	constraint := fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)", column, refTable, refColumn)
-	if onDelete != "" {
-		constraint += " ON DELETE " + onDelete
-	}
-	if onUpdate != "" {
-		constraint += " ON UPDATE " + onUpdate
-	}
-	return constraint
+func (d *SQLiteDialect) CreateTableSQL(table string, columns []string) string {
+	return fmt.Sprintf("CREATE TABLE %s (\n  %s\n)", table, strings.Join(columns, ",\n  "))
 }
 
-func (s *SQLiteDialect) CreateIndex(table, name string, columns []string, unique bool) string {
-	if name == "" {
-		name = fmt.Sprintf("%s_%s_idx", table, strings.Join(columns, "_"))
-	}
+func (d *SQLiteDialect) AddColumnSQL(table, column string) string {
+	return fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s", table, column)
+}
+
+func (d *SQLiteDialect) ModifyColumnSQL(table, column string) string {
+	// SQLite does not support MODIFY COLUMN directly. You need to recreate the table.
+	return fmt.Sprintf("ALTER TABLE %s RENAME TO old_table", table)
+}
+
+func (d *SQLiteDialect) RenameColumnSQL(table, old, new string) string {
+	// SQLite does not support RENAME COLUMN directly. You need to recreate the table.
+	return fmt.Sprintf("ALTER TABLE %s RENAME TO old_table", table)
+}
+
+func (d *SQLiteDialect) DropColumnSQL(table, column string) string {
+	// SQLite does not support DROP COLUMN directly. You need to recreate the table.
+	return fmt.Sprintf("ALTER TABLE %s RENAME TO old_table", table)
+}
+
+func (d *SQLiteDialect) DropTableSQL(table string) string {
+	return fmt.Sprintf("DROP TABLE %s", table)
+}
+
+func (d *SQLiteDialect) RenameTableSQL(old, new string) string {
+	return fmt.Sprintf("ALTER TABLE %s RENAME TO %s", old, new)
+}
+
+func (d *SQLiteDialect) CreateIndexSQL(table, name string, columns []string, unique bool) string {
 	uniqueStr := ""
 	if unique {
-		uniqueStr = "UNIQUE "
+		uniqueStr = "UNIQUE"
 	}
-	return fmt.Sprintf("CREATE %sINDEX IF NOT EXISTS %s ON %s (%s)",
-		uniqueStr, name, table, strings.Join(columns, ", "))
+	return fmt.Sprintf(
+		"CREATE %s INDEX %s ON %s (%s)",
+		uniqueStr,
+		name,
+		table,
+		strings.Join(columns, ", "),
+	)
+}
+
+func (d *SQLiteDialect) DropIndexSQL(table, name string) string {
+	return fmt.Sprintf("DROP INDEX %s", name)
 }

@@ -1,8 +1,6 @@
 package migration
 
-import (
-	"gorm.io/gorm"
-)
+import "github.com/mrrizkin/pohara/modules/core/migration"
 
 type CreateMUserAttributeTable struct{}
 
@@ -10,15 +8,16 @@ func (m *CreateMUserAttributeTable) ID() string {
 	return "20250118103248_create_m_user_attribute_table"
 }
 
-func (m *CreateMUserAttributeTable) Up(tx *gorm.DB) error {
-	return tx.Exec(`CREATE TABLE IF NOT EXISTS m_user_attribute (
-		id BIGSERIAL PRIMARY KEY,
-		user_id BIGINT NOT NULL,
-		location TEXT,
-		language TEXT
-	)`).Error
+func (m *CreateMUserAttributeTable) Up(schema *migration.Schema) {
+	schema.Create("m_user_attribute", func(table *migration.Blueprint) {
+		table.ID()
+		table.BigInteger("user_id")
+		table.Text("location")
+		table.Text("language")
+		table.Timestamps()
+	})
 }
 
-func (m *CreateMUserAttributeTable) Down(tx *gorm.DB) error {
-	return tx.Exec(`DROP TABLE IF EXISTS m_user_attribute`).Error
+func (m *CreateMUserAttributeTable) Down(schema *migration.Schema) {
+	schema.Drop("m_user_attribute")
 }

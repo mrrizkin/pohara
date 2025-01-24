@@ -5,95 +5,129 @@ import (
 	"strings"
 )
 
-// PostgresDialect implements Dialect for PostgreSQL
 type PostgresDialect struct{}
 
-func (p *PostgresDialect) GetStringType(length int) string {
+func (d *PostgresDialect) GetStringType(length int) string {
 	return fmt.Sprintf("VARCHAR(%d)", length)
 }
 
-func (p *PostgresDialect) GetIntegerType() string {
+func (d *PostgresDialect) GetIntegerType() string {
 	return "INTEGER"
 }
 
-func (p *PostgresDialect) GetBigIntegerType() string {
+func (d *PostgresDialect) GetBigIntegerType() string {
 	return "BIGINT"
 }
 
-func (p *PostgresDialect) GetTextType() string {
+func (d *PostgresDialect) GetTextType() string {
 	return "TEXT"
 }
 
-func (p *PostgresDialect) GetTimestampType() string {
+func (d *PostgresDialect) GetTimestampType() string {
 	return "TIMESTAMP"
 }
 
-func (p *PostgresDialect) GetBooleanType() string {
+func (d *PostgresDialect) GetBooleanType() string {
 	return "BOOLEAN"
 }
 
-func (p *PostgresDialect) GetDecimalType(precision, scale int) string {
-	return fmt.Sprintf("DECIMAL(%d,%d)", precision, scale)
+func (d *PostgresDialect) GetEnumType(values []string) string {
+	quotedValues := make([]string, len(values))
+	for i, v := range values {
+		quotedValues[i] = fmt.Sprintf("'%s'", v)
+	}
+	return fmt.Sprintf("TEXT CHECK (%s IN (%s))", "value", strings.Join(quotedValues, ", "))
 }
 
-func (p *PostgresDialect) GetJsonType() string {
-	return "JSONB"
+func (d *PostgresDialect) GetDecimalType(precision, scale int) string {
+	return fmt.Sprintf("DECIMAL(%d, %d)", precision, scale)
 }
 
-func (p *PostgresDialect) GetDateType() string {
+func (d *PostgresDialect) GetDateType() string {
 	return "DATE"
 }
 
-func (p *PostgresDialect) GetTimeType() string {
+func (d *PostgresDialect) GetTimeType() string {
 	return "TIME"
 }
 
-func (p *PostgresDialect) GetBinaryType() string {
+func (d *PostgresDialect) GetJsonType() string {
+	return "JSONB"
+}
+
+func (d *PostgresDialect) GetBinaryType() string {
 	return "BYTEA"
 }
 
-func (p *PostgresDialect) GetFloatType() string {
+func (d *PostgresDialect) GetFloatType() string {
 	return "FLOAT"
 }
 
-func (p *PostgresDialect) GetUUIDType() string {
+func (d *PostgresDialect) GetUUIDType() string {
 	return "UUID"
 }
 
-func (p *PostgresDialect) WrapPrimaryKey(column string) string {
+func (d *PostgresDialect) GetPrimaryKey() string {
 	return "PRIMARY KEY"
 }
 
-func (p *PostgresDialect) WrapUnique(column string) string {
+func (d *PostgresDialect) GetUnique(column string) string {
 	return "UNIQUE"
 }
 
-func (p *PostgresDialect) WrapNullable(column string) string {
+func (d *PostgresDialect) GetNullable(column string, nullable bool) string {
+	if nullable {
+		return "NULL"
+	}
 	return "NOT NULL"
 }
 
-func (p *PostgresDialect) WrapDefault(column, value string) string {
-	return fmt.Sprintf("DEFAULT %s", value)
+func (d *PostgresDialect) GetDefault(column, value string) string {
+	return fmt.Sprintf("DEFAULT '%s'", value)
 }
 
-func (p *PostgresDialect) GetForeignKeyConstraint(column, refTable, refColumn, onDelete, onUpdate string) string {
-	constraint := fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)", column, refTable, refColumn)
-	if onDelete != "" {
-		constraint += " ON DELETE " + onDelete
-	}
-	if onUpdate != "" {
-		constraint += " ON UPDATE " + onUpdate
-	}
-	return constraint
+func (d *PostgresDialect) CreateTableSQL(table string, columns []string) string {
+	return fmt.Sprintf("CREATE TABLE %s (\n  %s\n)", table, strings.Join(columns, ",\n  "))
 }
 
-func (p *PostgresDialect) CreateIndex(table, name string, columns []string, unique bool) string {
-	if name == "" {
-		name = fmt.Sprintf("%s_%s_idx", table, strings.Join(columns, "_"))
-	}
+func (d *PostgresDialect) AddColumnSQL(table, column string) string {
+	return fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s", table, column)
+}
+
+func (d *PostgresDialect) ModifyColumnSQL(table, column string) string {
+	return fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s", table, column)
+}
+
+func (d *PostgresDialect) RenameColumnSQL(table, old, new string) string {
+	return fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", table, old, new)
+}
+
+func (d *PostgresDialect) DropColumnSQL(table, column string) string {
+	return fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", table, column)
+}
+
+func (d *PostgresDialect) DropTableSQL(table string) string {
+	return fmt.Sprintf("DROP TABLE %s", table)
+}
+
+func (d *PostgresDialect) RenameTableSQL(old, new string) string {
+	return fmt.Sprintf("ALTER TABLE %s RENAME TO %s", old, new)
+}
+
+func (d *PostgresDialect) CreateIndexSQL(table, name string, columns []string, unique bool) string {
 	uniqueStr := ""
 	if unique {
-		uniqueStr = "UNIQUE "
+		uniqueStr = "UNIQUE"
 	}
-	return fmt.Sprintf("CREATE %sINDEX %s ON %s (%s)", uniqueStr, name, table, strings.Join(columns, ", "))
+	return fmt.Sprintf(
+		"CREATE %s INDEX %s ON %s (%s)",
+		uniqueStr,
+		name,
+		table,
+		strings.Join(columns, ", "),
+	)
+}
+
+func (d *PostgresDialect) DropIndexSQL(table, name string) string {
+	return fmt.Sprintf("DROP INDEX %s", name)
 }

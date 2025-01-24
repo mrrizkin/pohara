@@ -10,17 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mrrizkin/pohara/modules/cli"
-	"github.com/mrrizkin/pohara/modules/core/database"
 	"go.uber.org/fx"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gorm.io/gorm"
+
+	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/cli"
+	"github.com/mrrizkin/pohara/modules/core/database"
+	"github.com/mrrizkin/pohara/modules/core/migration"
 )
 
 type Migration interface {
-	Up(tx *gorm.DB) error
-	Down(tx *gorm.DB) error
+	Up(schema *migration.Schema)
+	Down(schema *migration.Schema)
 	ID() string
 }
 
@@ -43,7 +45,15 @@ type MigrationLoaderDependencies struct {
 
 type Migrator struct {
 	db         *database.GormDB
+	config     *config.Database
 	migrations []Migration
+}
+
+type MigratorDependencies struct {
+	fx.In
+
+	Db     *database.GormDB
+	Config *config.Database
 }
 
 var Module = fx.Module("migrator",
@@ -54,9 +64,10 @@ var Module = fx.Module("migrator",
 	fx.Decorate(LoadMigration),
 )
 
-func NewMigrator(db *database.GormDB) *Migrator {
+func NewMigrator(deps MigratorDependencies) *Migrator {
 	return &Migrator{
-		db: db,
+		db:     deps.Db,
+		config: deps.Config,
 	}
 }
 
@@ -116,51 +127,76 @@ func (m *Migrator) Migrate() error {
 		return fmt.Errorf("failed to create migration history table: %v", err)
 	}
 
+	var dialect migration.Dialect
+	switch m.config.DRIVER {
+	default:
+		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
+	case "pgsql", "postgres", "postgresql":
+		dialect = &migration.PostgresDialect{}
+	case "mysql", "mariadb":
+		dialect = &migration.MySqlDialect{}
+	case "sqlite":
+		dialect = &migration.SQLiteDialect{}
+	}
+
+	schema := migration.NewSchema(dialect)
+	migrations := make(map[string]Migration)
+	var histories []MigrationHistory
+	if err := m.db.Order("id ASC").Find(&histories).Error; err != nil {
+		return fmt.Errorf("failed to get migration history: %v", err)
+	}
+
+	executedMigrations := make(map[string]MigrationHistory)
+	for _, h := range histories {
+		executedMigrations[h.ID] = h
+	}
+
+	for _, migration := range m.migrations {
+		id := migration.ID()
+		if _, exists := executedMigrations[id]; !exists {
+			migrations[id] = migration
+		}
+	}
+
+	if len(migrations) == 0 {
+		fmt.Println("Nothing to migrate")
+		return nil
+	}
+
 	// get next batch number
 	batchNumber, err := m.getNextBatchNumber()
 	if err != nil {
 		return fmt.Errorf("failed to get next batch number: %v", err)
 	}
 
-	migrrationRun := 0
-
-	for _, migration := range m.migrations {
-		var history MigrationHistory
-
-		result := m.db.Where("id = ?", migration.ID()).First(&history)
-		if result.Error == nil {
-			continue
-		}
-
-		tx := m.db.Begin()
-
-		if err := migration.Up(tx); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to execute migration %s: %v", migration.ID(), err)
-		}
-
-		if err := tx.Create(&MigrationHistory{
-			ID:    migration.ID(),
+	var history []*MigrationHistory
+	for id, migration := range migrations {
+		migration.Up(schema)
+		history = append(history, &MigrationHistory{
+			ID:    id,
 			Batch: batchNumber,
-		}).Error; err != nil {
+		})
+	}
+
+	statements := schema.Statement()
+	tx := m.db.Begin()
+	for _, statement := range statements {
+		if err := tx.Exec(statement).Error; err != nil {
 			tx.Rollback()
-			return fmt.Errorf("failed to record migration %s: %v", migration.ID(), err)
+			return fmt.Errorf("failed to execute migration: %v", err)
 		}
-
-		if err := tx.Commit().Error; err != nil {
-			return fmt.Errorf("failed to commit migration %s: %v", migration.ID(), err)
-		}
-
-		migrrationRun++
-		fmt.Printf("Executed migration: %s (Batch %d)\n", migration.ID(), batchNumber)
 	}
 
-	if migrrationRun > 0 {
-		fmt.Printf("Batch %d complete. %d migration executed.\n", batchNumber, migrrationRun)
-	} else {
-		fmt.Println("Nothing to migrate")
+	if err := tx.Create(history).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to record migration: %v", err)
 	}
 
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit migration: %v", err)
+	}
+
+	fmt.Printf("Batch %d complete. %d migration executed.\n", batchNumber, len(migrations))
 	return nil
 }
 
@@ -194,36 +230,47 @@ func (m *Migrator) RollbackAll() error {
 }
 
 func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
+	var dialect migration.Dialect
+	switch m.config.DRIVER {
+	default:
+		return fmt.Errorf("unsupported driver: %s", m.config.DRIVER)
+	case "pgsql", "postgres", "postgresql":
+		dialect = &migration.PostgresDialect{}
+	case "mysql", "mariadb":
+		dialect = &migration.MySqlDialect{}
+	case "sqlite":
+		dialect = &migration.SQLiteDialect{}
+	}
+
+	schema := migration.NewSchema(dialect)
 	for _, history := range histories {
-		var migration Migration
 		for _, m := range m.migrations {
 			if m.ID() == history.ID {
-				migration = m
-				break
+				m.Down(schema)
 			}
 		}
+	}
 
-		if migration == nil {
-			continue
-		}
-
-		tx := m.db.Begin()
-
-		if err := migration.Down(tx); err != nil {
+	statements := schema.Statement()
+	tx := m.db.Begin()
+	for _, statement := range statements {
+		if err := tx.Exec(statement).Error; err != nil {
 			tx.Rollback()
-			return fmt.Errorf("failed to rollback migration %s: %v", migration.ID(), err)
+			return fmt.Errorf("failed to rollback migration: %v", err)
 		}
+	}
 
-		if err := tx.Delete(&history).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to remove migration record %s: %v", migration.ID(), err)
-		}
+	if err := tx.Delete(&histories).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to remove migration record: %v", err)
+	}
 
-		if err := tx.Commit().Error; err != nil {
-			return fmt.Errorf("failed to commit rollback %s: %v", migration.ID(), err)
-		}
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit rollback: %v", err)
+	}
 
-		fmt.Printf("Rolled back migration: %s (Batch %d)\n", migration.ID(), history.Batch)
+	for _, history := range histories {
+		fmt.Printf("Rolled back migration: (Batch %d)\n", history.Batch)
 	}
 
 	return nil
@@ -292,7 +339,7 @@ func (m *Migrator) CreateMigration(name string) error {
 	name = strings.ReplaceAll(name, " ", "")
 
 	// write the migration template to the file
-	_, err = file.WriteString(fmt.Sprintf(migrationTemplate, name, name, filename, name, name))
+	_, err = fmt.Fprintf(file, migrationTemplate, name, name, filename, name, name)
 	if err != nil {
 		return err
 	}
@@ -310,7 +357,11 @@ func (m *Migrator) CreateMigration(name string) error {
 	migrationEntry.Close()
 
 	// replace the /** PLACEHOLDER **/ with the struct name
-	content = bytes.Replace(content, []byte("/** PLACEHOLDER **/"), []byte("&"+name+"{},\n\t\t/** PLACEHOLDER **/"), -1)
+	content = bytes.ReplaceAll(
+		content,
+		[]byte("/** PLACEHOLDER **/"),
+		[]byte("&"+name+"{},\n\t\t/** PLACEHOLDER **/"),
+	)
 
 	// create a new file in the migrations directory
 	migrationEntry, err = os.Create(filepath.Join("database", "migration", "migration.go"))
