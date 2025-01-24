@@ -3,6 +3,7 @@ package provider
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	gormLogger "gorm.io/gorm/logger"
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -28,7 +29,10 @@ func (s *Sqlite) DSN() string {
 }
 
 func (s *Sqlite) Connect(cfg *config.Database) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(s.DSN()))
+	db, err := gorm.Open(sqlite.Open(s.DSN()), &gorm.Config{
+		Logger: gormLogger.Default.LogMode(gormLogger.Silent),
+	})
+
 	if err != nil {
 		return nil, err
 	}

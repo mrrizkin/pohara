@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/mrrizkin/pohara/app/config"
 )
@@ -29,5 +30,7 @@ func (m *Mysql) DSN() string {
 }
 
 func (m *Mysql) Connect(cfg *config.Database) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(m.DSN()))
+	return gorm.Open(mysql.Open(m.DSN()), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 }

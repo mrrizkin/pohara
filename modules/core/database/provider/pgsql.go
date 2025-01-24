@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/mrrizkin/pohara/app/config"
 )
@@ -30,5 +31,7 @@ func (p *Postgres) DSN() string {
 }
 
 func (p *Postgres) Connect(cfg *config.Database) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(p.DSN()))
+	return gorm.Open(postgres.Open(p.DSN()), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 }
