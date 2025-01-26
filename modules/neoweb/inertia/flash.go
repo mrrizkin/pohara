@@ -29,7 +29,7 @@ func (f *SimpleFlashProvider) GetErrors(ctx context.Context) (gonertia.Validatio
 	sessionID := f.getSessionIDFromContext(ctx)
 	errors, ok := f.errors[sessionID]
 	if !ok {
-		return nil, fmt.Errorf("History doesn't exist with that session id")
+		return nil, fmt.Errorf("history doesn't exist with that session id")
 	}
 	delete(f.errors, sessionID)
 	return errors, nil
@@ -45,17 +45,16 @@ func (f *SimpleFlashProvider) ShouldClearHistory(ctx context.Context) (bool, err
 	sessionID := f.getSessionIDFromContext(ctx)
 	clearHistory, ok := f.clearHistory[sessionID]
 	if !ok {
-		return false, fmt.Errorf("History doesn't exist with that session id")
+		return false, fmt.Errorf("history doesn't exist with that session id")
 	}
 	delete(f.clearHistory, sessionID)
 	return clearHistory, nil
 }
 
 func (f *SimpleFlashProvider) getSessionIDFromContext(ctx context.Context) string {
-	sessionId, ok := ctx.Value("session_id").(string)
+	sessionId, ok := ctx.Value(SessionID).(string)
 	if !ok {
 		return ""
 	}
-
 	return sessionId
 }

@@ -7,10 +7,13 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"reflect"
+	"unsafe"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/romsar/gonertia"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/config"
@@ -20,39 +23,39 @@ import (
 	"github.com/mrrizkin/pohara/resources/inertia"
 )
 
-// Inertia wraps gonertia.Inertia with additional Vite integration
+type InertiaContext int
+
+const (
+	InertiaCtx InertiaContext = iota
+	SessionID
+)
+
 type Inertia struct {
-	core    *gonertia.Inertia
-	flash   *SimpleFlashProvider
-	session *session.Session
+	core         *gonertia.Inertia
+	flash        *SimpleFlashProvider
+	sessionStore *session.Store
 }
 
-// Dependencies defines the required dependencies for Inertia
 type Dependencies struct {
 	fx.In
 
-	Session *session.Session
-	Config  *config.Config
-	Vite    *vite.Vite
+	SessionStore *session.Store
+	Config       *config.Config
+	Vite         *vite.Vite
 }
 
-// New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (*Inertia, error) {
-	options := make([]gonertia.Option, 0)
-
 	flash := NewSimpleFlashProvider()
-
-	options = append(options, gonertia.WithFlashProvider(flash))
+	options := []gonertia.Option{
+		gonertia.WithFlashProvider(flash),
+	}
 
 	if deps.Config.Inertia.ContainerID != "" {
 		options = append(options, gonertia.WithContainerID(deps.Config.Inertia.ContainerID))
 	}
 
 	if deps.Config.Inertia.ManifestPath != "" {
-		options = append(
-			options,
-			gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)),
-		)
+		options = append(options, gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)))
 	}
 
 	if deps.Config.Inertia.EncryptHistory {
@@ -77,59 +80,32 @@ func New(deps Dependencies) (*Inertia, error) {
 	})
 
 	return &Inertia{
-		core:    i,
-		session: deps.Session,
-		flash:   flash,
+		core:         i,
+		sessionStore: deps.SessionStore,
+		flash:        flash,
 	}, nil
 }
 
 func getVersionFromManifest(path string) string {
-	// Try to open and read the file
 	data, err := os.ReadFile(path)
 	if err != nil {
-		// If file doesn't exist, generate random string
 		return hash.NanoID()
 	}
 
-	// Create MD5 hash
-	hash := md5.New()
-	hash.Write(data)
-	return hex.EncodeToString(hash.Sum(nil))
+	hash := md5.Sum(data)
+	return hex.EncodeToString(hash[:])
 }
 
-// EncryptHistory enables history encryption
 func (i *Inertia) EncryptHistory(ctx *fiber.Ctx) error {
-	c, ok := ctx.Locals("inertia_context").(context.Context)
-	if !ok {
-		r, err := adaptor.ConvertRequest(ctx, true)
-		if err != nil {
-			return err
-		}
-		c = r.Context()
-	}
-
-	c = gonertia.SetEncryptHistory(c)
-	ctx.Locals("inertia_context", c)
+	ctx.SetUserContext(gonertia.SetEncryptHistory(ctx.UserContext()))
 	return nil
 }
 
-// ClearHistory clears the history
 func (i *Inertia) ClearHistory(ctx *fiber.Ctx) error {
-	c, ok := ctx.Locals("inertia_context").(context.Context)
-	if !ok {
-		r, err := adaptor.ConvertRequest(ctx, true)
-		if err != nil {
-			return err
-		}
-		c = r.Context()
-	}
-
-	c = gonertia.ClearHistory(c)
-	ctx.Locals("inertia_context", c)
+	ctx.SetUserContext(gonertia.ClearHistory(ctx.UserContext()))
 	return nil
 }
 
-// EncryptHistoryMiddleware provides middleware for encrypting history
 func (i *Inertia) EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
 	if err := i.EncryptHistory(ctx); err != nil {
 		return err
@@ -138,88 +114,53 @@ func (i *Inertia) EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
 	return ctx.Next()
 }
 
-// Middleware provides Inertia middleware for Fiber
-func (i *Inertia) Middleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		var next bool
+func (i *Inertia) Middleware(c *fiber.Ctx) error {
+	var next bool
 
-		ses, err := i.session.Get(c)
-		if err != nil {
-			return err
-		}
+	session, err := i.sessionStore.Get(c)
+	if err != nil {
+		return err
+	}
 
-		c.Locals("session_id", ses.ID())
-		i.core.ShareProp("flash", fiber.Map{
-			"message": ses.Get("message"),
-		})
+	i.setContext(c, SessionID, session.ID())
 
-		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next = true
-			// Convert again in case request may modify by middleware
-			c.Request().Header.SetMethod(r.Method)
-			c.Request().SetRequestURI(r.RequestURI)
-			c.Request().SetHost(r.Host)
-			c.Request().Header.SetHost(r.Host)
-			for key, val := range r.Header {
-				for _, v := range val {
-					c.Request().Header.Set(key, v)
-				}
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next = true
+
+		c.Request().Header.SetMethod(r.Method)
+		c.Request().SetRequestURI(r.RequestURI)
+		c.Request().SetHost(r.Host)
+		c.Request().Header.SetHost(r.Host)
+		for key, val := range r.Header {
+			for _, v := range val {
+				c.Request().Header.Set(key, v)
 			}
-			adaptor.CopyContextToFiberContext(r.Context(), c.Context())
-		})
-
-		if err := adaptor.HTTPHandler(i.core.Middleware(nextHandler))(c); err != nil {
-			return err
 		}
+		adaptor.CopyContextToFiberContext(r.Context(), c.Context())
+	})
 
-		if next {
-			return c.Next()
-		}
-		return nil
+	if err := adaptor.HTTPHandler(i.core.Middleware(nextHandler))(c); err != nil {
+		return err
 	}
+	if next {
+		return c.Next()
+	}
+
+	return nil
 }
 
-// Redirect redirects to the given URL
 func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status ...int) error {
-	r, err := adaptor.ConvertRequest(ctx, true)
-	if err != nil {
-		return err
-	}
-
-	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
-		r = r.WithContext(c)
-	}
-
-	w := newResponseWriter()
-	i.core.Redirect(w, r, url, status...)
-	return writeResponse(ctx, w)
+	return i.handleRedirect(ctx, url, i.core.Redirect, status...)
 }
 
-// Location redirect to the given external URL
 func (i *Inertia) Location(ctx *fiber.Ctx, url string, status ...int) error {
-	r, err := adaptor.ConvertRequest(ctx, true)
-	if err != nil {
-		return err
-	}
-
-	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
-		r = r.WithContext(c)
-	}
-
-	w := newResponseWriter()
-	i.core.Location(w, r, url, status...)
-	return writeResponse(ctx, w)
+	return i.handleRedirect(ctx, url, i.core.Location, status...)
 }
 
-// Back redirects to the previous URL
 func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
-	r, err := adaptor.ConvertRequest(ctx, true)
+	r, err := i.convertInertiaRequest(ctx)
 	if err != nil {
 		return err
-	}
-
-	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
-		r = r.WithContext(c)
 	}
 
 	w := newResponseWriter()
@@ -227,32 +168,12 @@ func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
 	return writeResponse(ctx, w)
 }
 
-// Render renders an Inertia component with the given props
 func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
-	r, err := adaptor.ConvertRequest(ctx, true)
+	r, err := i.convertInertiaRequest(ctx)
 	if err != nil {
 		return err
 	}
 
-	if c, ok := ctx.Locals("inertia_context").(context.Context); ok {
-		r = r.WithContext(c)
-	}
-
-	c := r.Context()
-	if _, ok := c.Value("session_id").(string); !ok {
-		sess, err := i.session.Get(ctx)
-		if err != nil {
-			return err
-		}
-
-		c = context.WithValue(c, "session_id", sess.ID())
-	}
-
-	if flashError, err := i.flash.GetErrors(c); err == nil {
-		c = gonertia.SetValidationErrors(c, flashError)
-	}
-
-	r = r.WithContext(c)
 	w := newResponseWriter()
 	if err := i.core.Render(w, r, component, props...); err != nil {
 		return err
@@ -262,7 +183,7 @@ func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Pro
 }
 
 func (i *Inertia) IsInertiaRequest(ctx *fiber.Ctx) bool {
-	r, err := adaptor.ConvertRequest(ctx, true)
+	r, err := i.convertInertiaRequest(ctx)
 	if err != nil {
 		return false
 	}
@@ -271,26 +192,72 @@ func (i *Inertia) IsInertiaRequest(ctx *fiber.Ctx) bool {
 }
 
 func (i *Inertia) AddValidationError(ctx *fiber.Ctx, errMap fiber.Map) error {
-	c, ok := ctx.Locals("inertia_context").(context.Context)
-	if !ok {
-		r, err := adaptor.ConvertRequest(ctx, true)
-		if err != nil {
-			return err
-		}
-		c = r.Context()
-
-	}
-
-	if _, ok = c.Value("session_id").(string); !ok {
-		sess, err := i.session.Get(ctx)
-		if err != nil {
-			return err
-		}
-
-		c = context.WithValue(c, "session_id", sess.ID())
-	}
-
-	c = gonertia.AddValidationErrors(c, gonertia.ValidationErrors(errMap))
-	ctx.Locals("inertia_context", c)
+	ctx.SetUserContext(
+		gonertia.AddValidationErrors(ctx.UserContext(), gonertia.ValidationErrors(errMap)),
+	)
 	return nil
+}
+
+func (i *Inertia) convertInertiaRequest(ctx *fiber.Ctx) (*http.Request, error) {
+	r, err := adaptor.ConvertRequest(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	userCtx := ctx.UserContext()
+	if userCtx != context.Background() {
+		copyContextToFiberContext(userCtx, ctx.Context())
+	}
+
+	r = r.WithContext(ctx.Context())
+	return r, nil
+}
+
+func (i *Inertia) setContext(ctx *fiber.Ctx, key, value any) {
+	ctx.Context().SetUserValue(key, value)
+}
+
+func (i *Inertia) context(ctx *fiber.Ctx, key any) any {
+	return ctx.Context().UserValue(key).(context.Context)
+}
+
+func copyContextToFiberContext(ctx interface{}, requestContext *fasthttp.RequestCtx) {
+	if ctx == context.Background() {
+		return
+	}
+	contextValues := reflect.ValueOf(ctx).Elem()
+	contextKeys := reflect.TypeOf(ctx).Elem()
+	if contextKeys.Kind() == reflect.Struct {
+		var lastKey interface{}
+		for i := 0; i < contextValues.NumField(); i++ {
+			reflectValue := contextValues.Field(i)
+			/* #nosec */
+			reflectValue = reflect.NewAt(reflectValue.Type(), unsafe.Pointer(reflectValue.UnsafeAddr())).Elem()
+
+			reflectField := contextKeys.Field(i)
+
+			if reflectField.Name == "noCopy" {
+				break
+			} else if reflectField.Name == "Context" {
+				copyContextToFiberContext(reflectValue.Interface(), requestContext)
+			} else if reflectField.Name == "key" {
+				lastKey = reflectValue.Interface()
+			} else if lastKey != nil && reflectField.Name == "val" {
+				requestContext.SetUserValue(lastKey, reflectValue.Interface())
+			} else {
+				lastKey = nil
+			}
+		}
+	}
+}
+
+func (i *Inertia) handleRedirect(ctx *fiber.Ctx, url string, redirectFunc func(http.ResponseWriter, *http.Request, string, ...int), status ...int) error {
+	r, err := i.convertInertiaRequest(ctx)
+	if err != nil {
+		return err
+	}
+
+	w := newResponseWriter()
+	redirectFunc(w, r, url, status...)
+	return writeResponse(ctx, w)
 }

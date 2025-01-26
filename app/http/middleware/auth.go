@@ -11,21 +11,21 @@ import (
 )
 
 type AuthMiddleware struct {
-	session     *session.Session
-	authService *service.AuthService
+	sessionStore *session.Store
+	authService  *service.AuthService
 }
 
 type AuthMiddlewareDependencies struct {
 	fx.In
 
-	Session     *session.Session
-	AuthService *service.AuthService
+	SessionStore *session.Store
+	AuthService  *service.AuthService
 }
 
 func NewAuthMiddleware(deps AuthMiddlewareDependencies) *AuthMiddleware {
 	return &AuthMiddleware{
-		session:     deps.Session,
-		authService: deps.AuthService,
+		sessionStore: deps.SessionStore,
+		authService:  deps.AuthService,
 	}
 }
 

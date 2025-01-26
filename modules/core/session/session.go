@@ -17,7 +17,7 @@ type SessionProvider interface {
 	Setup() (fiber.Storage, error)
 }
 
-type Session struct {
+type Store struct {
 	*session.Store
 	storage fiber.Storage
 }
@@ -25,7 +25,7 @@ type Session struct {
 func NewSession(
 	lc fx.Lifecycle,
 	config *config.Config,
-) (*Session, error) {
+) (*Store, error) {
 	var driver SessionProvider
 
 	switch config.Session.Driver {
@@ -44,7 +44,7 @@ func NewSession(
 		return nil, err
 	}
 
-	sess := Session{
+	store := Store{
 		Store: session.New(session.Config{
 			Storage:        storage,
 			Expiration:     24 * time.Hour,
@@ -58,13 +58,13 @@ func NewSession(
 
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
-			return sess.Stop()
+			return store.Stop()
 		},
 	})
 
-	return &sess, nil
+	return &store, nil
 }
 
-func (s *Session) Stop() error {
+func (s *Store) Stop() error {
 	return s.storage.Close()
 }

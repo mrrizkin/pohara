@@ -25,7 +25,6 @@ export function NavUser({
 	const { isMobile } = useSidebar();
 
 	function logout() {
-		router.clearHistory();
 		router.post("/_/auth/logout");
 	}
 

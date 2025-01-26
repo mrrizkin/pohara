@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// responseWriter implements http.ResponseWriter for adapting between Fiber and net/http
 type responseWriter struct {
 	body       []byte
 	statusCode int
@@ -29,8 +28,6 @@ func writeResponse(ctx *fiber.Ctx, w *responseWriter) error {
 
 	return nil
 }
-
-// responseWriter implementation
 
 func newResponseWriter() *responseWriter {
 	return &responseWriter{

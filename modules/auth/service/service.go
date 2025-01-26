@@ -14,29 +14,29 @@ import (
 )
 
 type AuthService struct {
-	session  *session.Session
-	log      *logger.ZeroLog
-	authRepo *repository.AuthRepository
+	sessionStore *session.Store
+	log          *logger.ZeroLog
+	authRepo     *repository.AuthRepository
 }
 
 type AuthServiceDependencies struct {
 	fx.In
 
-	Session  *session.Session
-	Logger   *logger.ZeroLog
-	AuthRepo *repository.AuthRepository
+	SessionStore *session.Store
+	Logger       *logger.ZeroLog
+	AuthRepo     *repository.AuthRepository
 }
 
 func NewAuthService(deps AuthServiceDependencies) *AuthService {
 	return &AuthService{
-		session:  deps.Session,
-		log:      deps.Logger,
-		authRepo: deps.AuthRepo,
+		sessionStore: deps.SessionStore,
+		log:          deps.Logger,
+		authRepo:     deps.AuthRepo,
 	}
 }
 
 func (a *AuthService) Authenticated(ctx *fiber.Ctx) error {
-	sess, err := a.session.Get(ctx)
+	sess, err := a.sessionStore.Get(ctx)
 	if err != nil {
 		return fiber.ErrUnauthorized
 	}
@@ -69,7 +69,7 @@ func (a *AuthService) Authenticated(ctx *fiber.Ctx) error {
 }
 
 func (a *AuthService) Login(ctx *fiber.Ctx, uid uint) error {
-	sess, err := a.session.Get(ctx)
+	sess, err := a.sessionStore.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (a *AuthService) Login(ctx *fiber.Ctx, uid uint) error {
 }
 
 func (a *AuthService) Logout(ctx *fiber.Ctx) error {
-	sess, err := a.session.Get(ctx)
+	sess, err := a.sessionStore.Get(ctx)
 	if err != nil {
 		return err
 	}

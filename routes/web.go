@@ -32,7 +32,7 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 	return server.NewWebRouter("/", func(r fiber.Router) {
 		r.Get("/", deps.Welcome.Index).Name("welcome")
 
-		webAdmin := r.Group("/_/", deps.Inertia.Middleware())
+		webAdmin := r.Group("/_/", deps.Inertia.Middleware)
 		webAdmin.Get("/", deps.AuthMiddleware.Authenticated, deps.Dashboard.Index).
 			Name("dashboard.index")
 

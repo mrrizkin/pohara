@@ -103,9 +103,9 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 type SetupRouterDependecies struct {
 	fx.In
 
-	App     *fiber.App
-	Session *session.Session
-	Config  *config.Config
+	App          *fiber.App
+	SessionStore *session.Store
+	Config       *config.Config
 
 	WebRoutes []WebRouter `group:"web_router"`
 	ApiRoutes []ApiRouter `group:"api_router"`
@@ -136,7 +136,7 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 				KeyGenerator:      utils.UUIDv4,
 				ErrorHandler:      csrf.ConfigDefault.ErrorHandler,
 				Extractor:         csrf.CsrfFromCookie(deps.Config.CSRF.CookieName),
-				Session:           deps.Session.Store,
+				Session:           deps.SessionStore.Store,
 				SessionKey:        "fiber.csrf.token",
 				HandlerContextKey: "fiber.csrf.handler",
 			}),
@@ -147,7 +147,12 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	return deps.App
 }
 
-func StartServer(lx fx.Lifecycle, app *fiber.App, config *config.Config, log *logger.ZeroLog) error {
+func StartServer(
+	lx fx.Lifecycle,
+	app *fiber.App,
+	config *config.Config,
+	log *logger.ZeroLog,
+) error {
 	lx.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
