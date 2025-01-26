@@ -34,7 +34,7 @@ func (v *Validator) MustValidate(data interface{}) error {
 	}
 
 	return &fiber.Error{
-		Code:    fiber.ErrBadRequest.Code,
+		Code:    fiber.StatusUnprocessableEntity,
 		Message: strings.Join(v.Format(errs), " and "),
 	}
 }
@@ -79,7 +79,7 @@ func (v *Validator) ParseBodyAndValidate(ctx *fiber.Ctx, out interface{}) error 
 	err := ctx.BodyParser(out)
 	if err != nil {
 		return &fiber.Error{
-			Code:    400,
+			Code:    422,
 			Message: "payload not valid",
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"html/template"
+	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,26 +15,34 @@ import (
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/common/hash"
+	"github.com/mrrizkin/pohara/modules/core/session"
 	"github.com/mrrizkin/pohara/modules/neoweb/vite"
 	"github.com/mrrizkin/pohara/resources/inertia"
 )
 
 // Inertia wraps gonertia.Inertia with additional Vite integration
 type Inertia struct {
-	core *gonertia.Inertia
+	core    *gonertia.Inertia
+	flash   *SimpleFlashProvider
+	session *session.Session
 }
 
 // Dependencies defines the required dependencies for Inertia
 type Dependencies struct {
 	fx.In
 
-	Config *config.Config
-	Vite   *vite.Vite
+	Session *session.Session
+	Config  *config.Config
+	Vite    *vite.Vite
 }
 
 // New creates a new instance of Inertia with the provided dependencies
 func New(deps Dependencies) (*Inertia, error) {
 	options := make([]gonertia.Option, 0)
+
+	flash := NewSimpleFlashProvider()
+
+	options = append(options, gonertia.WithFlashProvider(flash))
 
 	if deps.Config.Inertia.ContainerID != "" {
 		options = append(options, gonertia.WithContainerID(deps.Config.Inertia.ContainerID))
@@ -68,7 +77,9 @@ func New(deps Dependencies) (*Inertia, error) {
 	})
 
 	return &Inertia{
-		core: i,
+		core:    i,
+		session: deps.Session,
+		flash:   flash,
 	}, nil
 }
 
@@ -129,7 +140,43 @@ func (i *Inertia) EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
 
 // Middleware provides Inertia middleware for Fiber
 func (i *Inertia) Middleware() fiber.Handler {
-	return adaptor.HTTPMiddleware(i.core.Middleware)
+	return func(c *fiber.Ctx) error {
+		var next bool
+
+		ses, err := i.session.Get(c)
+		if err != nil {
+			return err
+		}
+
+		c.Locals("session_id", ses.ID())
+		i.core.ShareProp("flash", fiber.Map{
+			"message": ses.Get("message"),
+		})
+
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next = true
+			// Convert again in case request may modify by middleware
+			c.Request().Header.SetMethod(r.Method)
+			c.Request().SetRequestURI(r.RequestURI)
+			c.Request().SetHost(r.Host)
+			c.Request().Header.SetHost(r.Host)
+			for key, val := range r.Header {
+				for _, v := range val {
+					c.Request().Header.Set(key, v)
+				}
+			}
+			adaptor.CopyContextToFiberContext(r.Context(), c.Context())
+		})
+
+		if err := adaptor.HTTPHandler(i.core.Middleware(nextHandler))(c); err != nil {
+			return err
+		}
+
+		if next {
+			return c.Next()
+		}
+		return nil
+	}
 }
 
 // Redirect redirects to the given URL
@@ -191,10 +238,59 @@ func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Pro
 		r = r.WithContext(c)
 	}
 
+	c := r.Context()
+	if _, ok := c.Value("session_id").(string); !ok {
+		sess, err := i.session.Get(ctx)
+		if err != nil {
+			return err
+		}
+
+		c = context.WithValue(c, "session_id", sess.ID())
+	}
+
+	if flashError, err := i.flash.GetErrors(c); err == nil {
+		c = gonertia.SetValidationErrors(c, flashError)
+	}
+
+	r = r.WithContext(c)
 	w := newResponseWriter()
 	if err := i.core.Render(w, r, component, props...); err != nil {
 		return err
 	}
 
 	return writeResponse(ctx.Type("html"), w)
+}
+
+func (i *Inertia) IsInertiaRequest(ctx *fiber.Ctx) bool {
+	r, err := adaptor.ConvertRequest(ctx, true)
+	if err != nil {
+		return false
+	}
+
+	return gonertia.IsInertiaRequest(r)
+}
+
+func (i *Inertia) AddValidationError(ctx *fiber.Ctx, errMap fiber.Map) error {
+	c, ok := ctx.Locals("inertia_context").(context.Context)
+	if !ok {
+		r, err := adaptor.ConvertRequest(ctx, true)
+		if err != nil {
+			return err
+		}
+		c = r.Context()
+
+	}
+
+	if _, ok = c.Value("session_id").(string); !ok {
+		sess, err := i.session.Get(ctx)
+		if err != nil {
+			return err
+		}
+
+		c = context.WithValue(c, "session_id", sess.ID())
+	}
+
+	c = gonertia.AddValidationErrors(c, gonertia.ValidationErrors(errMap))
+	ctx.Locals("inertia_context", c)
+	return nil
 }

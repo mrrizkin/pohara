@@ -15,6 +15,11 @@ import (
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
 )
 
+const (
+	DashboardRoute = "/_/"
+	AuthLoginRoute = "/_/auth/login"
+)
+
 type AuthController struct {
 	log       *logger.ZeroLog
 	inertia   *inertia.Inertia
@@ -51,7 +56,7 @@ func NewAuthController(deps AuthControllerDependencies) *AuthController {
 
 func (c *AuthController) LoginPage(ctx *fiber.Ctx) error {
 	if err := c.authService.Authenticated(ctx); err == nil {
-		return ctx.Redirect("/_/")
+		return ctx.Redirect(DashboardRoute)
 	}
 
 	return c.inertia.Render(ctx, "auth/login", gonertia.Props{})
@@ -71,6 +76,14 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if err := c.validator.ParseBodyAndValidate(ctx, &input); err != nil {
 		cause := "error parse and validate"
 		c.log.Error(cause, "error", err)
+		if c.inertia.IsInertiaRequest(ctx) {
+			c.inertia.AddValidationError(ctx, fiber.Map{
+				"username": "not valid",
+				"password": "not valid",
+			})
+			return c.inertia.Redirect(ctx, AuthLoginRoute)
+		}
+
 		return err
 	}
 
@@ -79,6 +92,13 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if err != nil {
 		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
+		if c.inertia.IsInertiaRequest(ctx) {
+			c.inertia.AddValidationError(ctx, fiber.Map{
+				"username": "incorrect",
+				"password": "incorrect",
+			})
+			return c.inertia.Redirect(ctx, AuthLoginRoute)
+		}
 		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
 	}
 
@@ -86,6 +106,13 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if match, err := c.hash.Compare(input.Password, user.Password); !match || err != nil {
 		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
+		if c.inertia.IsInertiaRequest(ctx) {
+			c.inertia.AddValidationError(ctx, fiber.Map{
+				"username": "incorrect",
+				"password": "incorrect",
+			})
+			return c.inertia.Redirect(ctx, AuthLoginRoute)
+		}
 		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
 	}
 
@@ -93,10 +120,17 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if err := c.authService.Login(ctx, user.ID); err != nil {
 		cause := "error login"
 		c.log.Error(cause, "error", err)
+		if c.inertia.IsInertiaRequest(ctx) {
+			c.inertia.AddValidationError(ctx, fiber.Map{
+				"message": "Failed to login",
+				"type":    "danger",
+			})
+			return c.inertia.Redirect(ctx, AuthLoginRoute)
+		}
 		return err
 	}
 
-	return c.inertia.Redirect(ctx, "/_/")
+	return c.inertia.Redirect(ctx, DashboardRoute)
 }
 
 func (c *AuthController) Register(ctx *fiber.Ctx) error {
@@ -111,5 +145,5 @@ func (c *AuthController) Logout(ctx *fiber.Ctx) error {
 	}
 
 	c.inertia.ClearHistory(ctx)
-	return c.inertia.Redirect(ctx, "/_/auth/login")
+	return c.inertia.Redirect(ctx, AuthLoginRoute)
 }
