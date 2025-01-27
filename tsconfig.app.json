@@ -25,8 +25,9 @@
 		/* Alias */
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/assets/": ["./resources/assets/*"],
+			"@/*": ["./resources/frontend/*"]
 		}
 	},
-	"include": ["src"]
+	"include": ["resources/frontend"]
 }

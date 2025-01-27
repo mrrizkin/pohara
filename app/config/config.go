@@ -79,7 +79,7 @@ type Config struct {
 		ManifestPath   string `env:"INERTIA_VITE_MANIFEST_PATH,default=public/build/manifest.json"`
 		ContainerID    string `env:"INERTIA_CONTAINER_ID,default=app"`
 		EncryptHistory bool   `env:"INERTIA_ENCRYPT_HISTORY,default=true"`
-		EntryPath      string `env:"INERTIA_ENTRY_PATH,default=index.html"`
+		EntryPath      string `env:"INERTIA_ENTRY_PATH,default=frontend/index.html"`
 	}
 
 	StoragePath string `env:"STORAGE_PATH,default=storage"`

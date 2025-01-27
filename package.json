@@ -6,8 +6,14 @@
 	"scripts": {
 		"lint": "eslint .",
 		"preview": "vite preview",
-		"dev": "vite",
-		"build": "vite build"
+		"setup": "pnpm install && go mod tidy",
+		"dev:assets": "vite",
+		"dev:app": "air",
+		"build:assets": "vite build",
+		"build:app": "go build -v -trimpath -o ./bin/app ./main.go",
+		"dev": "concurrently \"pnpm dev:assets\" \"bash -c 'sleep 3 && pnpm dev:app'\"",
+		"build": "pnpm build:assets && pnpm build:app",
+		"generate:swagger": "swag init -g ./main.go -ot json -o ./public/docs --pd --parseInternal"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",

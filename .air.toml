@@ -3,9 +3,9 @@ tmp_dir = "storage/app/bin"
 
 [build]
 bin = "./storage/app/bin/main run"
-cmd = "go build -o ./storage/app/bin/main ./main.go"
+cmd = "templ generate && go build -o ./storage/app/bin/main ./main.go"
 delay = 1000
-exclude_dir = ["assets", "storage", "resources/inertia"]
+exclude_dir = ["assets", "storage", "resources/frontend"]
 exclude_file = []
 exclude_regex = [".*_templ.go"]
 exclude_unchanged = false

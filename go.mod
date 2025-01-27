@@ -20,6 +20,7 @@ require (
 	github.com/romsar/gonertia v1.3.5
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
+	github.com/valyala/fasthttp v1.58.0
 	go.uber.org/fx v1.23.0
 	golang.org/x/crypto v0.32.0
 	golang.org/x/text v0.21.0
@@ -61,7 +62,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.58.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

@@ -20,7 +20,7 @@ import (
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/core/session"
 	"github.com/mrrizkin/pohara/modules/neoweb/vite"
-	"github.com/mrrizkin/pohara/resources/inertia"
+	"github.com/mrrizkin/pohara/resources"
 )
 
 type InertiaContext int
@@ -59,7 +59,7 @@ func New(deps Dependencies) (*Inertia, error) {
 		options = append(options, gonertia.WithEncryptHistory(deps.Config.Inertia.EncryptHistory))
 	}
 
-	r, err := inertia.Entry.Open(deps.Config.Inertia.EntryPath)
+	r, err := resources.Frontend.Open(deps.Config.Inertia.EntryPath)
 	if err != nil {
 		return nil, err
 	}

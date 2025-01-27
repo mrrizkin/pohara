@@ -9,8 +9,7 @@ export default defineConfig({
 	plugins: [
 		react(),
 		backendPlugin({
-			input: ["src/main.tsx"],
-			publicDirectory: "../../public",
+			input: ["resources/frontend/main.tsx"],
 		}),
 		VitePWA({
 			workbox: {
@@ -27,7 +26,8 @@ export default defineConfig({
 	],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "./src"),
+			"@/assets": path.resolve(__dirname, "./resources/assets"),
+			"@": path.resolve(__dirname, "./resources/frontend"),
 		},
 	},
 });
