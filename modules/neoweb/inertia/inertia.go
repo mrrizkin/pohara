@@ -26,13 +26,11 @@ import (
 type InertiaContext int
 
 const (
-	InertiaCtx InertiaContext = iota
-	SessionID
+	SessionID InertiaContext = iota
 )
 
 type Inertia struct {
 	core         *gonertia.Inertia
-	flash        *SimpleFlashProvider
 	sessionStore *session.Store
 }
 
@@ -45,9 +43,8 @@ type Dependencies struct {
 }
 
 func New(deps Dependencies) (*Inertia, error) {
-	flash := NewSimpleFlashProvider()
 	options := []gonertia.Option{
-		gonertia.WithFlashProvider(flash),
+		gonertia.WithFlashProvider(NewSimpleFlashProvider()),
 	}
 
 	if deps.Config.Inertia.ContainerID != "" {
@@ -82,7 +79,6 @@ func New(deps Dependencies) (*Inertia, error) {
 	return &Inertia{
 		core:         i,
 		sessionStore: deps.SessionStore,
-		flash:        flash,
 	}, nil
 }
 
@@ -96,24 +92,6 @@ func getVersionFromManifest(path string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func (i *Inertia) EncryptHistory(ctx *fiber.Ctx) error {
-	ctx.SetUserContext(gonertia.SetEncryptHistory(ctx.UserContext()))
-	return nil
-}
-
-func (i *Inertia) ClearHistory(ctx *fiber.Ctx) error {
-	ctx.SetUserContext(gonertia.ClearHistory(ctx.UserContext()))
-	return nil
-}
-
-func (i *Inertia) EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
-	if err := i.EncryptHistory(ctx); err != nil {
-		return err
-	}
-
-	return ctx.Next()
-}
-
 func (i *Inertia) Middleware(c *fiber.Ctx) error {
 	var next bool
 
@@ -122,7 +100,7 @@ func (i *Inertia) Middleware(c *fiber.Ctx) error {
 		return err
 	}
 
-	i.setContext(c, SessionID, session.ID())
+	c.Context().SetUserValue(SessionID, session.ID())
 
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next = true
@@ -136,7 +114,7 @@ func (i *Inertia) Middleware(c *fiber.Ctx) error {
 				c.Request().Header.Set(key, v)
 			}
 		}
-		adaptor.CopyContextToFiberContext(r.Context(), c.Context())
+		copyContextToFiberContext(r.Context(), c.Context())
 	})
 
 	if err := adaptor.HTTPHandler(i.core.Middleware(nextHandler))(c); err != nil {
@@ -150,15 +128,29 @@ func (i *Inertia) Middleware(c *fiber.Ctx) error {
 }
 
 func (i *Inertia) Redirect(ctx *fiber.Ctx, url string, status ...int) error {
-	return i.handleRedirect(ctx, url, i.core.Redirect, status...)
+	r, err := convertRequest(ctx)
+	if err != nil {
+		return err
+	}
+
+	w := newResponseWriter()
+	i.core.Redirect(w, r, url, status...)
+	return writeResponse(ctx, w)
 }
 
 func (i *Inertia) Location(ctx *fiber.Ctx, url string, status ...int) error {
-	return i.handleRedirect(ctx, url, i.core.Location, status...)
+	r, err := convertRequest(ctx)
+	if err != nil {
+		return err
+	}
+
+	w := newResponseWriter()
+	i.core.Location(w, r, url, status...)
+	return writeResponse(ctx, w)
 }
 
 func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
-	r, err := i.convertInertiaRequest(ctx)
+	r, err := convertRequest(ctx)
 	if err != nil {
 		return err
 	}
@@ -169,7 +161,7 @@ func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
 }
 
 func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
-	r, err := i.convertInertiaRequest(ctx)
+	r, err := convertRequest(ctx)
 	if err != nil {
 		return err
 	}
@@ -182,8 +174,26 @@ func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Pro
 	return writeResponse(ctx.Type("html"), w)
 }
 
-func (i *Inertia) IsInertiaRequest(ctx *fiber.Ctx) bool {
-	r, err := i.convertInertiaRequest(ctx)
+func EncryptHistory(ctx *fiber.Ctx) error {
+	ctx.SetUserContext(gonertia.SetEncryptHistory(ctx.UserContext()))
+	return nil
+}
+
+func ClearHistory(ctx *fiber.Ctx) error {
+	ctx.SetUserContext(gonertia.ClearHistory(ctx.UserContext()))
+	return nil
+}
+
+func EncryptHistoryMiddleware(ctx *fiber.Ctx) error {
+	if err := EncryptHistory(ctx); err != nil {
+		return err
+	}
+
+	return ctx.Next()
+}
+
+func IsInertiaRequest(ctx *fiber.Ctx) bool {
+	r, err := convertRequest(ctx)
 	if err != nil {
 		return false
 	}
@@ -191,14 +201,14 @@ func (i *Inertia) IsInertiaRequest(ctx *fiber.Ctx) bool {
 	return gonertia.IsInertiaRequest(r)
 }
 
-func (i *Inertia) AddValidationError(ctx *fiber.Ctx, errMap fiber.Map) error {
+func AddValidationError(ctx *fiber.Ctx, errMap fiber.Map) error {
 	ctx.SetUserContext(
 		gonertia.AddValidationErrors(ctx.UserContext(), gonertia.ValidationErrors(errMap)),
 	)
 	return nil
 }
 
-func (i *Inertia) convertInertiaRequest(ctx *fiber.Ctx) (*http.Request, error) {
+func convertRequest(ctx *fiber.Ctx) (*http.Request, error) {
 	r, err := adaptor.ConvertRequest(ctx, true)
 	if err != nil {
 		return nil, err
@@ -211,14 +221,6 @@ func (i *Inertia) convertInertiaRequest(ctx *fiber.Ctx) (*http.Request, error) {
 
 	r = r.WithContext(ctx.Context())
 	return r, nil
-}
-
-func (i *Inertia) setContext(ctx *fiber.Ctx, key, value any) {
-	ctx.Context().SetUserValue(key, value)
-}
-
-func (i *Inertia) context(ctx *fiber.Ctx, key any) any {
-	return ctx.Context().UserValue(key).(context.Context)
 }
 
 func copyContextToFiberContext(ctx interface{}, requestContext *fasthttp.RequestCtx) {
@@ -249,15 +251,4 @@ func copyContextToFiberContext(ctx interface{}, requestContext *fasthttp.Request
 			}
 		}
 	}
-}
-
-func (i *Inertia) handleRedirect(ctx *fiber.Ctx, url string, redirectFunc func(http.ResponseWriter, *http.Request, string, ...int), status ...int) error {
-	r, err := i.convertInertiaRequest(ctx)
-	if err != nil {
-		return err
-	}
-
-	w := newResponseWriter()
-	redirectFunc(w, r, url, status...)
-	return writeResponse(ctx, w)
 }

@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "@inertiajs/react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -27,7 +28,11 @@ const defaultValues: LoginFormValues = {
 	password: "",
 };
 
-export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+interface LoginFormProps extends React.ComponentProps<"div"> {
+	errors?: any;
+}
+
+export function LoginForm({ className, ...props }: LoginFormProps) {
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(loginFormSchema),
 		defaultValues,
@@ -36,6 +41,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 	function onSubmit(data: LoginFormValues) {
 		router.post("/_/auth/login", data);
 	}
+
+	React.useEffect(() => {
+		if (props.errors) {
+			for (const [field, message] of Object.entries(props.errors)) {
+				form.setError(field as keyof LoginFormValues, {
+					type: "manual",
+					message: message as string,
+				});
+			}
+		}
+	}, [props.errors, form]);
 
 	return (
 		<div className={cn("flex flex-col gap-6", className)} {...props}>

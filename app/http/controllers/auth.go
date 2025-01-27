@@ -76,10 +76,10 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if err := c.validator.ParseBodyAndValidate(ctx, &input); err != nil {
 		cause := "error parse and validate"
 		c.log.Error(cause, "error", err)
-		if c.inertia.IsInertiaRequest(ctx) {
-			c.inertia.AddValidationError(ctx, fiber.Map{
-				"username": "not valid",
-				"password": "not valid",
+		if inertia.IsInertiaRequest(ctx) {
+			inertia.AddValidationError(ctx, fiber.Map{
+				"email":    "input not valid",
+				"password": "input not valid",
 			})
 			return c.inertia.Redirect(ctx, AuthLoginRoute)
 		}
@@ -87,29 +87,29 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	// get the user by the username
+	// get the user by the email
 	user, err := c.userRepo.FindByEmail(input.Email)
 	if err != nil {
 		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
-		if c.inertia.IsInertiaRequest(ctx) {
-			c.inertia.AddValidationError(ctx, fiber.Map{
-				"username": "incorrect",
-				"password": "incorrect",
+		if inertia.IsInertiaRequest(ctx) {
+			inertia.AddValidationError(ctx, fiber.Map{
+				"email":    "email is incorrect",
+				"password": "password is incorrect",
 			})
 			return c.inertia.Redirect(ctx, AuthLoginRoute)
 		}
 		return fiber.NewError(fiber.StatusUnauthorized, fmt.Sprintf("failed: %s", cause))
 	}
 
-	// compore the password
+	// compare the password
 	if match, err := c.hash.Compare(input.Password, user.Password); !match || err != nil {
 		cause := "email or password is incorrect"
 		c.log.Error(cause, "error", err)
-		if c.inertia.IsInertiaRequest(ctx) {
-			c.inertia.AddValidationError(ctx, fiber.Map{
-				"username": "incorrect",
-				"password": "incorrect",
+		if inertia.IsInertiaRequest(ctx) {
+			inertia.AddValidationError(ctx, fiber.Map{
+				"email":    "email is incorrect",
+				"password": "password is incorrect",
 			})
 			return c.inertia.Redirect(ctx, AuthLoginRoute)
 		}
@@ -120,8 +120,8 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	if err := c.authService.Login(ctx, user.ID); err != nil {
 		cause := "error login"
 		c.log.Error(cause, "error", err)
-		if c.inertia.IsInertiaRequest(ctx) {
-			c.inertia.AddValidationError(ctx, fiber.Map{
+		if inertia.IsInertiaRequest(ctx) {
+			inertia.AddValidationError(ctx, fiber.Map{
 				"message": "Failed to login",
 				"type":    "danger",
 			})
@@ -144,6 +144,6 @@ func (c *AuthController) Logout(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	c.inertia.ClearHistory(ctx)
+	inertia.ClearHistory(ctx)
 	return c.inertia.Redirect(ctx, AuthLoginRoute)
 }
