@@ -317,5 +317,6 @@ func rollingFile(c *config.Config) (io.Writer, error) {
 		MaxBackups: c.Log.MaxBackup, // files
 		MaxSize:    c.Log.MaxSize,   // megabytes
 		MaxAge:     c.Log.MaxAge,    // days
+		Compress:   true,
 	}, nil
 }

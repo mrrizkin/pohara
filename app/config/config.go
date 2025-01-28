@@ -13,7 +13,6 @@ var Module = config.Load(
 type Config struct {
 	App struct {
 		Name    string `env:"APP_NAME,required"`
-		Key     string `env:"APP_KEY"`
 		Env     string `env:"APP_ENV,required"`
 		URL     string `env:"APP_URL,required"`
 		Port    int    `env:"APP_PORT,required"`
@@ -22,14 +21,13 @@ type Config struct {
 	}
 
 	Database struct {
-		Driver      string `env:"DB_DRIVER,default=sqlite"`
-		Host        string `env:"DB_HOST"`
-		Port        int    `env:"DB_PORT,default=5432"`
-		Name        string `env:"DB_NAME"`
-		Username    string `env:"DB_USERNAME,default=root"`
-		Password    string `env:"DB_PASSWORD,default=root"`
-		SSLmode     string `env:"DB_SSLMODE,default=disable"`
-		AutoMigrate bool   `env:"DB_AUTO_MIGRATE,default=true"`
+		Driver   string `env:"DB_DRIVER,default=sqlite"`
+		Host     string `env:"DB_HOST"`
+		Port     int    `env:"DB_PORT,default=5432"`
+		Name     string `env:"DB_NAME"`
+		Username string `env:"DB_USERNAME,default=root"`
+		Password string `env:"DB_PASSWORD,default=root"`
+		SSLmode  string `env:"DB_SSLMODE,default=disable"`
 	}
 
 	Log struct {
@@ -44,12 +42,15 @@ type Config struct {
 	}
 
 	Hash struct {
-		Provider    string `env:"HASH_PROVIDER,default=argon2"`
-		Memory      int    `env:"HASH_MEMORY,default=64"`
-		Iterations  int    `env:"HASH_ITERATIONS,default=10"`
-		Parallelism int    `env:"HASH_PARALLELISM,default=2"`
-		SaltLen     int    `env:"HASH_SALT_LEN,default=32"`
-		KeyLen      int    `env:"HASH_KEY_LEN,default=32"`
+		Provider string `env:"HASH_PROVIDER,default=argon2"`
+
+		Argon2 struct {
+			Memory      int `env:"ARGON2_MEMORY,default=64"`
+			Iterations  int `env:"ARGON2_ITERATIONS,default=10"`
+			Parallelism int `env:"ARGON2_PARALLELISM,default=2"`
+			SaltLen     int `env:"ARGON2_SALT_LEN,default=32"`
+			KeyLen      int `env:"ARGON2_KEY_LEN,default=32"`
+		}
 	}
 
 	CSRF struct {

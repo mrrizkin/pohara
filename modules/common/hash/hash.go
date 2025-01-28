@@ -24,19 +24,19 @@ func New(config *config.Config) *Hashing {
 	switch config.Hash.Provider {
 	case "argon2", "argon":
 		algo = algorithm.Argon2(
-			uint32(config.Hash.Memory),
-			uint32(config.Hash.Iterations),
-			uint32(config.Hash.KeyLen),
-			uint32(config.Hash.SaltLen),
-			uint8(config.Hash.Parallelism),
+			uint32(config.Hash.Argon2.Memory),
+			uint32(config.Hash.Argon2.Iterations),
+			uint32(config.Hash.Argon2.KeyLen),
+			uint32(config.Hash.Argon2.SaltLen),
+			uint8(config.Hash.Argon2.Parallelism),
 		)
 	default:
 		algo = algorithm.Argon2(
-			uint32(config.Hash.Memory),
-			uint32(config.Hash.Iterations),
-			uint32(config.Hash.KeyLen),
-			uint32(config.Hash.SaltLen),
-			uint8(config.Hash.Parallelism),
+			uint32(config.Hash.Argon2.Memory),
+			uint32(config.Hash.Argon2.Iterations),
+			uint32(config.Hash.Argon2.KeyLen),
+			uint32(config.Hash.Argon2.SaltLen),
+			uint8(config.Hash.Argon2.Parallelism),
 		)
 	}
 
