@@ -30,6 +30,7 @@ type Dialect interface {
 
 	// Table operations
 	CreateTableSQL(table string, columns []string) string
+	CreateTableIfNotExistSQL(table string, columns []string) string
 	AddColumnSQL(table, column string) string
 	ModifyColumnSQL(table, column string) string
 	RenameColumnSQL(table, old, new string) string
@@ -98,6 +99,26 @@ func (s *Schema) Create(table string, callback func(*Blueprint)) {
 	}
 
 	sql := s.dialect.CreateTableSQL(table, columns)
+	s.statements = append(s.statements, sql)
+
+	for _, idx := range bp.Indexes {
+		s.statements = append(
+			s.statements,
+			s.dialect.CreateIndexSQL(table, idx.Name, idx.Columns, idx.Unique),
+		)
+	}
+}
+
+func (s *Schema) CreateIfNotExist(table string, callback func(*Blueprint)) {
+	bp := &Blueprint{TableName: table, IsCreating: true, dialect: s.dialect}
+	callback(bp)
+
+	columns := []string{}
+	for _, col := range bp.Columns {
+		columns = append(columns, s.buildColumn(col))
+	}
+
+	sql := s.dialect.CreateTableIfNotExistSQL(table, columns)
 	s.statements = append(s.statements, sql)
 
 	for _, idx := range bp.Indexes {
@@ -263,6 +284,15 @@ func (b *Blueprint) Enum(name string, values []string) *ColumnBuilder {
 	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
 }
 
+func (b *Blueprint) Timestamp(name string) *ColumnBuilder {
+	col := Column{
+		Name: name,
+		Type: b.dialect.GetTimestampType(),
+	}
+	b.Columns = append(b.Columns, col)
+	return &ColumnBuilder{col: &b.Columns[len(b.Columns)-1]}
+}
+
 func (b *Blueprint) Timestamps() {
 	b.Columns = append(b.Columns,
 		Column{
@@ -294,6 +324,11 @@ func (b *Blueprint) ModifyColumn(column Column) {
 // Column builder for fluent interface
 type ColumnBuilder struct {
 	col *Column
+}
+
+func (cb *ColumnBuilder) Primary() *ColumnBuilder {
+	cb.col.IsPrimary = true
+	return cb
 }
 
 func (cb *ColumnBuilder) Nullable() *ColumnBuilder {

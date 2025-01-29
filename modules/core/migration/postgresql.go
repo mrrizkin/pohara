@@ -87,7 +87,19 @@ func (d *PostgresDialect) GetDefault(column, value string) string {
 }
 
 func (d *PostgresDialect) CreateTableSQL(table string, columns []string) string {
-	return fmt.Sprintf("CREATE TABLE %s (\n  %s\n)", table, strings.Join(columns, ",\n  "))
+	return fmt.Sprintf(
+		"CREATE TABLE %s (\n  %s\n)",
+		table,
+		strings.Join(columns, ",\n  "),
+	)
+}
+
+func (d *PostgresDialect) CreateTableIfNotExistSQL(table string, columns []string) string {
+	return fmt.Sprintf(
+		"CREATE TABLE IF NOT EXIST %s (\n  %s\n)",
+		table,
+		strings.Join(columns, ",\n  "),
+	)
 }
 
 func (d *PostgresDialect) AddColumnSQL(table, column string) string {

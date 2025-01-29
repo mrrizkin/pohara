@@ -6,12 +6,12 @@ import (
 )
 
 type CfgPolicy struct {
-	ID         uint                `json:"id"         gorm:"primaryKey"`
-	Name       string              `json:"name"       gorm:"not null,uniqueIndex"`
-	Conditions condition.Condition `json:"conditions" gorm:"type:jsonb"`
-	Action     access.Action       `json:"action"     gorm:"not null"`
-	Effect     access.Effect       `json:"effect"     gorm:"not null"`
-	Resource   string              `json:"resource"   gorm:"not null"`
+	ID         uint                `json:"id"         db:"id"`
+	Name       string              `json:"name"       db:"name"`
+	Conditions condition.Condition `json:"conditions" db:"conditions"`
+	Action     access.Action       `json:"action"     db:"action"`
+	Effect     access.Effect       `json:"effect"     db:"effect"`
+	Resource   string              `json:"resource"   db:"resource"`
 }
 
 func (CfgPolicy) TableName() string {

@@ -91,6 +91,14 @@ func (d *MySqlDialect) CreateTableSQL(table string, columns []string) string {
 	return fmt.Sprintf("CREATE TABLE %s (\n  %s\n)", table, strings.Join(columns, ",\n  "))
 }
 
+func (d *MySqlDialect) CreateTableIfNotExistSQL(table string, columns []string) string {
+	return fmt.Sprintf(
+		"CREATE TABLE IF NOT EXIST %s (\n  %s\n)",
+		table,
+		strings.Join(columns, ",\n  "),
+	)
+}
+
 func (d *MySqlDialect) AddColumnSQL(table, column string) string {
 	return fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s", table, column)
 }

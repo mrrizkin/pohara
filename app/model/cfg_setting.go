@@ -1,7 +1,7 @@
 package model
 
 type CfgSetting struct {
-	ID uint `json:"id"         gorm:"primaryKey"`
+	ID uint `json:"id" db:"id"`
 }
 
 func (CfgSetting) TableName() string {

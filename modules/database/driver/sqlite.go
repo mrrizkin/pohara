@@ -1,9 +1,8 @@
-package provider
+package driver
 
 import (
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	gormLogger "gorm.io/gorm/logger"
+	"github.com/jmoiron/sqlx"
+	_ "zombiezen.com/go/sqlite"
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -28,23 +27,20 @@ func (s *Sqlite) DSN() string {
 	return s.config.Database.Host
 }
 
-func (s *Sqlite) Connect(cfg *config.Config) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(s.DSN()), &gorm.Config{
-		Logger: gormLogger.Default.LogMode(gormLogger.Silent),
-	})
-
+func (s *Sqlite) Connect() (*sqlx.DB, error) {
+	db, err := sqlx.Open("sqlite", s.DSN())
 	if err != nil {
 		return nil, err
 	}
 
-	err = db.Exec("PRAGMA journal_mode = WAL;").Error
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {
 		s.log.Warn("Failed to enable WAL journal mode", "error", err)
 	} else {
 		s.log.Info("Enabled WAL journal mode")
 	}
 
-	err = db.Exec("PRAGMA foreign_keys = ON;").Error
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
 	if err != nil {
 		s.log.Warn("Failed to enable foreign keys", "error", err)
 	} else {

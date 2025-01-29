@@ -1,20 +1,21 @@
 package repository
 
 import (
+	"fmt"
 	"math"
+
+	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/database"
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/validator"
-	"go.uber.org/fx"
-	"gorm.io/gorm"
+	"github.com/mrrizkin/pohara/modules/database"
 )
 
 type UserRepository struct {
-	db        *database.GormDB
+	db        *database.Database
 	log       *logger.ZeroLog
 	validator *validator.Validator
 	hashing   *hash.Hashing
@@ -23,7 +24,7 @@ type UserRepository struct {
 type UserRepositoryDependencies struct {
 	fx.In
 
-	Database  *database.GormDB
+	Database  *database.Database
 	Logger    *logger.ZeroLog
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
@@ -39,7 +40,9 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 }
 
 func (r *UserRepository) Create(user *model.MUser) error {
-	return r.db.Create(user).Error
+	sqlx := r.db.Builder()
+	_, err := sqlx.Table("m_user").Insert().Values(user).Exec()
+	return err
 }
 
 func (r *UserRepository) Find(
@@ -47,16 +50,16 @@ func (r *UserRepository) Find(
 	page, limit sql.Int64Nullable,
 ) (result *sql.PaginationResult, err error) {
 	var users []model.MUser
-	var total int64
 
-	query := r.db.Model(&users)
-	err = query.Session(&gorm.Session{NewDB: true}).Count(&total).Error
+	sqlx := r.db.Builder()
+	sqlx.Table("m_user")
+	total, err := sqlx.Clone().Count()
 	if err != nil {
 		return
 	}
 
 	if limit.Valid {
-		query = query.Limit(int(limit.Int64))
+		sqlx.Limit(int(limit.Int64))
 	}
 
 	offset := sql.Int64Null()
@@ -67,10 +70,10 @@ func (r *UserRepository) Find(
 			offset.Int64 = page.Int64 * limit.Int64
 		}
 
-		query = query.Offset(int(offset.Int64))
+		sqlx.Offset(int(offset.Int64))
 	}
 
-	err = query.Find(&users).Error
+	err = sqlx.All(&users)
 	if err != nil {
 		return
 	}
@@ -78,7 +81,7 @@ func (r *UserRepository) Find(
 	totalPage := sql.Int64Null()
 	if offset.Valid && limit.Valid && limit.Int64 != 0 {
 		totalPage.Valid = true
-		totalPage.Int64 = int64(math.Ceil(float64(offset.Int64)/float64(limit.Int64))) + 1
+		totalPage.Int64 = int64(math.Ceil(float64(total)/float64(limit.Int64))) + 1
 	}
 
 	result = &sql.PaginationResult{
@@ -94,20 +97,48 @@ func (r *UserRepository) Find(
 
 func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
 	var user model.MUser
-	err := r.db.First(&user, id).Error
+
+	sqlx := r.db.Builder()
+	err := sqlx.Table("m_user").Select().Where("id = ?", id).Get(&user)
 	return &user, err
 }
 
 func (r *UserRepository) FindByEmail(email string) (*model.MUser, error) {
 	var user model.MUser
-	err := r.db.Where("email = ?", email).First(&user).Error
+
+	sqlx := r.db.Builder()
+	err := sqlx.Table("m_user").Select().Where("email = ?", email).Get(&user)
 	return &user, err
 }
 
 func (r *UserRepository) Update(user *model.MUser) error {
-	return r.db.Save(user).Error
+	sqlx := r.db.Builder()
+	_, err := sqlx.Table("m_user").Update().
+		Set("name", user.Name).
+		Set("username", user.Username).
+		Set("email", user.Email).
+		Set("password", user.Password).
+		Where("id = ?", user.ID).
+		Exec()
+
+	return err
 }
 
 func (r *UserRepository) Delete(id uint) error {
-	return r.db.Delete(&model.MUser{}, id).Error
+	sqlx := r.db.Builder()
+	result, err := sqlx.Table("m_user").Delete().Where("id = ?", id).Exec()
+	if err != nil {
+		return err
+	}
+
+	rowAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowAffected == 0 {
+		return fmt.Errorf("nothing deleted")
+	}
+
+	return nil
 }

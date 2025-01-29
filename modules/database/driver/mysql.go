@@ -1,11 +1,10 @@
-package provider
+package driver
 
 import (
 	"fmt"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/mrrizkin/pohara/app/config"
 )
@@ -29,8 +28,6 @@ func (m *Mysql) DSN() string {
 	)
 }
 
-func (m *Mysql) Connect(cfg *config.Config) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(m.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+func (m *Mysql) Connect() (*sqlx.DB, error) {
+	return sqlx.Connect("mysql", m.DSN())
 }

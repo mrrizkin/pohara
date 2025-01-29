@@ -1,11 +1,10 @@
-package provider
+package driver
 
 import (
 	"fmt"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	_ "github.com/jackc/pgx"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/mrrizkin/pohara/app/config"
 )
@@ -30,8 +29,6 @@ func (p *Postgres) DSN() string {
 	)
 }
 
-func (p *Postgres) Connect(cfg *config.Config) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(p.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+func (p *Postgres) Connect() (*sqlx.DB, error) {
+	return sqlx.Connect("postgres", p.DSN())
 }
