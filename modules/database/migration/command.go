@@ -1,4 +1,4 @@
-package migrator
+package migration
 
 import (
 	"github.com/mrrizkin/pohara/modules/cli"
@@ -25,7 +25,7 @@ func (m *MigratorCommand) Description() string {
 
 func (m *MigratorCommand) Run(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
-		if err := m.migrator.Migrate(); err != nil {
+		if err := m.migrator.migrate(); err != nil {
 			cmd.PrintErrf("error running migration: %v\n", err)
 			return
 		}
@@ -35,21 +35,21 @@ func (m *MigratorCommand) Run(cmd *cobra.Command, args []string) {
 	}
 	switch args[0] {
 	case "rollback":
-		if err := m.migrator.RollbackLastBatch(); err != nil {
+		if err := m.migrator.rollbackLastBatch(); err != nil {
 			cmd.PrintErrf("Error rolling back migration: %v\n", err)
 			return
 		}
 		cmd.Println("Rollback completed successfully")
 
 	case "reset":
-		if err := m.migrator.RollbackAll(); err != nil {
+		if err := m.migrator.rollbackAll(); err != nil {
 			cmd.PrintErrf("Error resetting migrations: %v\n", err)
 			return
 		}
 		cmd.Println("Reset completed successfully")
 
 	case "status":
-		if err := m.migrator.Status(); err != nil {
+		if err := m.migrator.status(); err != nil {
 			cmd.PrintErrf("Error getting migration status: %v\n", err)
 			return
 		}
@@ -60,7 +60,7 @@ func (m *MigratorCommand) Run(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		if err := m.migrator.CreateMigration(args[1]); err != nil {
+		if err := m.migrator.createMigration(args[1]); err != nil {
 			cmd.PrintErrf("Error creating migration: %v\n", err)
 			return
 		}

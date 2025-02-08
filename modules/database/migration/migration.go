@@ -206,7 +206,7 @@ func (s *Schema) Raw(statement string) {
 	s.statements = append(s.statements, statement)
 }
 
-func (s *Schema) Statement() []string {
+func (s *Schema) statement() []string {
 	return s.statements
 }
 

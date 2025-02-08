@@ -1,6 +1,6 @@
 package migration
 
-import "github.com/mrrizkin/pohara/modules/core/migration"
+import "github.com/mrrizkin/pohara/modules/database/migration"
 
 type CreateMRoleTable struct{}
 

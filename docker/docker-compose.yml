@@ -1,0 +1,13 @@
+services:
+    pohara_db:
+        image: postgres:16
+        container_name: pohara_db
+        restart: "no"
+        ports:
+            - 5432:5432
+        volumes:
+            - ../storage/database:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres

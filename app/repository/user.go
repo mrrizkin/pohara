@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"fmt"
 	"math"
 
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/common/hash"
@@ -40,9 +40,7 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 }
 
 func (r *UserRepository) Create(user *model.MUser) error {
-	sqlx := r.db.Builder()
-	_, err := sqlx.Table("m_user").Insert().Values(user).Exec()
-	return err
+	return r.db.Create(user).Error
 }
 
 func (r *UserRepository) Find(
@@ -50,16 +48,16 @@ func (r *UserRepository) Find(
 	page, limit sql.Int64Nullable,
 ) (result *sql.PaginationResult, err error) {
 	var users []model.MUser
+	var total int64
 
-	sqlx := r.db.Builder()
-	sqlx.Table("m_user")
-	total, err := sqlx.Clone().Count()
+	query := r.db.Model(&users)
+	err = query.Session(&gorm.Session{NewDB: true}).Count(&total).Error
 	if err != nil {
 		return
 	}
 
 	if limit.Valid {
-		sqlx.Limit(int(limit.Int64))
+		query.Limit(int(limit.Int64))
 	}
 
 	offset := sql.Int64Null()
@@ -70,10 +68,10 @@ func (r *UserRepository) Find(
 			offset.Int64 = page.Int64 * limit.Int64
 		}
 
-		sqlx.Offset(int(offset.Int64))
+		query.Offset(int(offset.Int64))
 	}
 
-	err = sqlx.All(&users)
+	err = query.Find(&users).Error
 	if err != nil {
 		return
 	}
@@ -97,48 +95,20 @@ func (r *UserRepository) Find(
 
 func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
 	var user model.MUser
-
-	sqlx := r.db.Builder()
-	err := sqlx.Table("m_user").Select().Where("id = ?", id).Get(&user)
+	err := r.db.First(&user, id).Error
 	return &user, err
 }
 
 func (r *UserRepository) FindByEmail(email string) (*model.MUser, error) {
 	var user model.MUser
-
-	sqlx := r.db.Builder()
-	err := sqlx.Table("m_user").Select().Where("email = ?", email).Get(&user)
+	err := r.db.Where("email = ?", email).First(&user).Error
 	return &user, err
 }
 
 func (r *UserRepository) Update(user *model.MUser) error {
-	sqlx := r.db.Builder()
-	_, err := sqlx.Table("m_user").Update().
-		Set("name", user.Name).
-		Set("username", user.Username).
-		Set("email", user.Email).
-		Set("password", user.Password).
-		Where("id = ?", user.ID).
-		Exec()
-
-	return err
+	return r.db.Save(user).Error
 }
 
 func (r *UserRepository) Delete(id uint) error {
-	sqlx := r.db.Builder()
-	result, err := sqlx.Table("m_user").Delete().Where("id = ?", id).Exec()
-	if err != nil {
-		return err
-	}
-
-	rowAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowAffected == 0 {
-		return fmt.Errorf("nothing deleted")
-	}
-
-	return nil
+	return r.db.Delete(&model.MUser{}, id).Error
 }

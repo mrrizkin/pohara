@@ -1,4 +1,4 @@
-package migrator
+package migration
 
 import (
 	"bytes"
@@ -16,20 +16,20 @@ import (
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/cli"
-	"github.com/mrrizkin/pohara/modules/core/migration"
 	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/database/migration/dialect"
 )
 
 type Migration interface {
-	Up(schema *migration.Schema)
-	Down(schema *migration.Schema)
+	Up(schema *Schema)
+	Down(schema *Schema)
 	ID() string
 }
 
 type MigrationHistory struct {
-	ID        string    `db:"id"`
-	Batch     int       `db:"batch"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        string    `json:"id" gorm:"primary_key"`
+	Batch     int       `json:"batch"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (MigrationHistory) TableName() string {
@@ -65,6 +65,11 @@ var Module = fx.Module("migrator",
 )
 
 func NewMigrator(deps MigratorDependencies) *Migrator {
+	err := deps.Db.AutoMigrate(MigrationHistory{})
+	if err != nil {
+		panic(fmt.Sprintf("failed to migrate the __migration_history__: %v", err))
+	}
+
 	return &Migrator{
 		db:     deps.Db,
 		config: deps.Config,
@@ -109,7 +114,10 @@ func (m *Migrator) getNextBatchNumber() (int, error) {
 		MaxBatch int
 	}
 
-	err := m.db.Get(&lastBatch, "COALESCE(MAX(batch), 0) as max_batch")
+	err := m.db.Model(MigrationHistory{}).
+		Select("COALESCE(MAX(batch), 0) as max_batch").
+		Scan(&lastBatch).
+		Error
 	if err != nil {
 		return 0, err
 	}
@@ -117,19 +125,17 @@ func (m *Migrator) getNextBatchNumber() (int, error) {
 	return lastBatch.MaxBatch + 1, nil
 }
 
-func (m *Migrator) Migrate() error {
+func (m *Migrator) migrate() error {
 	dialect, err := m.getDialect()
 	if err != nil {
 		return err
 	}
 
-	schema := migration.NewSchema(dialect)
-	createMigrationTable(schema)
-
+	schema := NewSchema(dialect)
 	migrations := make(map[string]Migration)
 	var histories []MigrationHistory
 
-	if err := m.db.Select(&histories, "SELECT * FROM __migration_history__ ORDER BY id ASC"); err != nil {
+	if err := m.db.Order("id ASC").Find(&histories).Error; err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
@@ -165,30 +171,21 @@ func (m *Migrator) Migrate() error {
 		})
 	}
 
-	statements := schema.Statement()
-	tx, err := m.db.Beginx()
-	if err != nil {
-		return err
-	}
+	statements := schema.statement()
+	tx := m.db.Begin()
 	for _, statement := range statements {
-		if _, err := tx.Exec(statement); err != nil {
+		if err := tx.Exec(statement).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to execute migration: %v", err)
 		}
 	}
 
-	_, err = m.db.Builder().
-		Table("__migration_history__").
-		Insert().
-		Values(history).
-		WithTx(tx).
-		Exec()
-	if err != nil {
+	if err := tx.Create(history).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to record migration: %v", err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit migration: %v", err)
 	}
 
@@ -196,7 +193,7 @@ func (m *Migrator) Migrate() error {
 	return nil
 }
 
-func (m *Migrator) RollbackLastBatch() error {
+func (m *Migrator) rollbackLastBatch() error {
 	lastBatch, err := m.getNextBatchNumber()
 	if err != nil {
 		return err
@@ -204,25 +201,19 @@ func (m *Migrator) RollbackLastBatch() error {
 	lastBatch--
 
 	var histories []MigrationHistory
-	err = m.db.Builder().
-		Table("__migration_history__").
-		Where("batch = ?", lastBatch).
-		OrderBy("id", "DESC").
-		All(&histories)
-	if err != nil {
+	if err := m.db.Where("batch = ?", lastBatch).
+		Order("id DESC").
+		Find(&histories).Error; err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
 	return m.rollbackMigrations(histories)
 }
 
-func (m *Migrator) RollbackAll() error {
+func (m *Migrator) rollbackAll() error {
 	var histories []MigrationHistory
-	err := m.db.Select(
-		&histories,
-		"SELECT * FROM __migration_history__ ORDER BY batch DESC, id DESC",
-	)
-	if err != nil {
+	if err := m.db.Order("batch DESC, id DESC").
+		Find(&histories).Error; err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
@@ -235,7 +226,7 @@ func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 		return err
 	}
 
-	schema := migration.NewSchema(dialect)
+	schema := NewSchema(dialect)
 	for _, history := range histories {
 		for _, m := range m.migrations {
 			if m.ID() == history.ID {
@@ -244,27 +235,23 @@ func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 		}
 	}
 
-	statements := schema.Statement()
-	tx, err := m.db.Beginx()
-	if err != nil {
-		return err
-	}
-
+	statements := schema.statement()
+	tx := m.db.Begin()
 	for _, statement := range statements {
-		if _, err := tx.Exec(statement); err != nil {
+		if err := tx.Exec(statement).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to rollback migration: %v", err)
 		}
 	}
 
 	for _, history := range histories {
-		if _, err := tx.Exec("DELETE FROM __migration_history__ WHERE id = ?", history.ID); err != nil {
+		if err := tx.Exec("DELETE FROM __migration_history__ WHERE id = ?", history.ID).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to remove migration record: %v", err)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit rollback: %v", err)
 	}
 
@@ -275,54 +262,86 @@ func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 	return nil
 }
 
-func (m *Migrator) getDialect() (migration.Dialect, error) {
+func (m *Migrator) getDialect() (Dialect, error) {
 	switch m.config.Database.Driver {
 	default:
 		return nil, fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
 	case "pgsql", "postgres", "postgresql":
-		return &migration.PostgresDialect{}, nil
+		return &dialect.PostgresDialect{}, nil
 	case "mysql", "mariadb", "maria":
-		return &migration.MySqlDialect{}, nil
+		return &dialect.MySqlDialect{}, nil
 	case "sqlite", "sqlite3", "file":
-		return &migration.SQLiteDialect{}, nil
+		return &dialect.SQLiteDialect{}, nil
 	}
 }
 
-func (m *Migrator) Status() error {
+func (m *Migrator) status() error {
 	var histories []MigrationHistory
-	err := m.db.Builder().
-		Table("__migration_history__").
-		OrderBy("id", "ASC").
-		All(&histories)
-	if err != nil {
+	if err := m.db.Order("id ASC").Find(&histories).Error; err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
-
-	fmt.Println("\nMigration Status:")
-	fmt.Println("+-----------------+--------+---------------------+")
-	fmt.Println("| Migration       | Batch  | Executed At        |")
-	fmt.Println("+-----------------+--------+---------------------+")
 
 	executedMigrations := make(map[string]MigrationHistory)
 	for _, h := range histories {
 		executedMigrations[h.ID] = h
 	}
 
+	// Determine max column widths
+	maxMigrationLen := len("Migration")
+	maxBatchLen := len("Batch")
+	maxExecutedLen := len("Executed At")
+
 	for _, migration := range m.migrations {
 		id := migration.ID()
-		if history, exists := executedMigrations[id]; exists {
-			fmt.Printf("| %-15s | %-6d | %-19s |\n",
-				id, history.Batch, history.CreatedAt.Format("2006-01-02 15:04:05"))
-		} else {
-			fmt.Printf("| %-15s | Pending | Not Executed        |\n", id)
+		if len(id) > maxMigrationLen {
+			maxMigrationLen = len(id)
 		}
 	}
 
-	fmt.Println("+-----------------+--------+---------------------+")
+	for _, history := range histories {
+		batchStr := fmt.Sprintf("%d", history.Batch)
+		executedStr := history.CreatedAt.Format("2006-01-02 15:04:05")
+
+		if len(batchStr) > maxBatchLen {
+			maxBatchLen = len(batchStr)
+		}
+		if len(executedStr) > maxExecutedLen {
+			maxExecutedLen = len(executedStr)
+		}
+	}
+
+	if len("Pending") > maxBatchLen {
+		maxBatchLen = len("Pending")
+	}
+
+	if len("Not Executed") > maxExecutedLen {
+		maxExecutedLen = len("Not Executed")
+	}
+
+	// Print table header
+	fmt.Println("\nMigration Status:")
+	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
+	fmt.Printf("| %-*s | %-*s | %-*s |\n", maxMigrationLen, "Migration", maxBatchLen, "Batch", maxExecutedLen, "Executed At")
+	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
+
+	// Print migration statuses
+	for _, migration := range m.migrations {
+		id := migration.ID()
+		if history, exists := executedMigrations[id]; exists {
+			fmt.Printf("| %-*s | %-*d | %-*s |\n",
+				maxMigrationLen, id, maxBatchLen, history.Batch, maxExecutedLen, history.CreatedAt.Format("2006-01-02 15:04:05"))
+		} else {
+			fmt.Printf("| %-*s | %-*s | %-*s |\n",
+				maxMigrationLen, id, maxBatchLen, "Pending", maxExecutedLen, "Not Executed")
+		}
+	}
+
+	// Print table footer
+	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
 	return nil
 }
 
-func (m *Migrator) CreateMigration(name string) error {
+func (m *Migrator) createMigration(name string) error {
 	// if the name is empty, generate a random name
 	if name == "" {
 		name = fmt.Sprintf("migration_%d", time.Now().UnixNano())
@@ -395,19 +414,11 @@ func (m *Migrator) CreateMigration(name string) error {
 	return nil
 }
 
-func createMigrationTable(schema *migration.Schema) {
-	schema.CreateIfNotExist("__migration_history__", func(table *migration.Blueprint) {
-		table.Text("id").Primary()
-		table.Integer("batch")
-		table.Timestamp("created_at")
-	})
-}
-
 // migrationTemplate is the template for a migration file
 const migrationTemplate = `package migration
 
 import (
-	"github.com/mrrizkin/pohara/modules/core/migration"
+	"github.com/mrrizkin/pohara/modules/database/migration"
 )
 
 type %s struct{}

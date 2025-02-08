@@ -2,53 +2,49 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/config"
-	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/database/driver"
-	"github.com/mrrizkin/pohara/modules/database/sqlbuilder/builder"
-	"github.com/mrrizkin/pohara/modules/database/sqlbuilder/dialect"
 )
 
 type Database struct {
-	*sqlx.DB
+	*gorm.DB
 	config *config.Config
 }
 
-type DatabaseDriver interface {
-	DSN() string
-	Connect() (*sqlx.DB, error)
+type Driver interface {
+	Connect(cfg *config.Config) (*gorm.DB, error)
 }
 
 type DatabaseDependencies struct {
 	fx.In
 
 	Config *config.Config
-	Logger *logger.ZeroLog
 }
 
-func NewDatabase(lc fx.Lifecycle, deps DatabaseDependencies) (*Database, error) {
-	var databaseDriver DatabaseDriver
+func NewDatabase(lc fx.Lifecycle, deps DatabaseDependencies) *Database {
+	db := &Database{}
 
+	var d Driver
 	switch deps.Config.Database.Driver {
 	case "mysql", "mariadb", "maria":
-		databaseDriver = driver.NewMysql(deps.Config)
+		d = driver.Mysql{}
 	case "pgsql", "postgres", "postgresql":
-		databaseDriver = driver.NewPostgres(deps.Config)
+		d = driver.Postgres{}
 	case "sqlite", "sqlite3", "file":
-		databaseDriver = driver.NewSqlite(deps.Config, deps.Logger)
-	default:
-		return nil, fmt.Errorf("unknown database driver: %s", deps.Config.Database.Driver)
+		d = driver.SQLite{}
+	}
+	gormDB, err := d.Connect(deps.Config)
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect database: %v", err))
 	}
 
-	db, err := databaseDriver.Connect()
-	if err != nil {
-		return nil, err
-	}
+	db.DB = gormDB
 
 	lc.Append(fx.Hook{
 		OnStop: func(context.Context) error {
@@ -56,24 +52,18 @@ func NewDatabase(lc fx.Lifecycle, deps DatabaseDependencies) (*Database, error) 
 		},
 	})
 
-	return &Database{
-		DB: db,
-	}, err
+	return db
 }
 
-func (d *Database) Builder() *builder.SQLBuilder {
-	var sqlBuilder *builder.SQLBuilder
-
-	switch d.config.Database.Driver {
-	case "mysql", "mariadb", "maria":
-		sqlBuilder = builder.New(dialect.MySQL{}, d.DB)
-	case "pgsql", "postgres", "postgresql":
-		sqlBuilder = builder.New(dialect.Postgres{}, d.DB)
-	case "sqlite", "sqlite3", "file":
-		sqlBuilder = builder.New(dialect.SQLite{}, d.DB)
-	default:
-		panic(fmt.Sprintf("unknown database driver: %s", d.config.Database.Driver))
+func (d *Database) Close() error {
+	if d.DB == nil {
+		return errors.New("you try to close database, but database not connected yet")
 	}
 
-	return sqlBuilder
+	db, err := d.DB.DB()
+	if err != nil {
+		return err
+	}
+
+	return db.Close()
 }

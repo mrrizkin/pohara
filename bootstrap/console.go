@@ -1,14 +1,15 @@
 package bootstrap
 
 import (
+	"go.uber.org/fx"
+
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/database/migration"
 	"github.com/mrrizkin/pohara/modules/cli"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/core"
-	"github.com/mrrizkin/pohara/modules/core/migrator"
-	"go.uber.org/fx"
+	dbMigration "github.com/mrrizkin/pohara/modules/database/migration"
 )
 
 func Console() *fx.App {
@@ -17,8 +18,8 @@ func Console() *fx.App {
 		core.Module,
 		hash.Module,
 		repository.Module,
+		dbMigration.Module,
 		migration.Module,
-		migrator.Module,
 		cli.Module,
 
 		fx.NopLogger,

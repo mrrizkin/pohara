@@ -55,17 +55,6 @@ func NewZeroLog(config *config.Config) (*ZeroLog, error) {
 	zlogInstance := zerolog.New(mw).With().Timestamp().Logger()
 	logger := ZeroLog{&zlogInstance}
 
-	logger.Info(
-		"logging configured",
-		"fileLogging", config.Log.File,
-		"jsonLogOutput", config.Log.Json,
-		"logDirectory", config.Log.Dir,
-		"fileName", config.App.Name+".log",
-		"maxSizeMB", config.Log.MaxSize,
-		"maxBackups", config.Log.MaxBackup,
-		"maxAgeInDays", config.Log.MaxAge,
-	)
-
 	return &logger, nil
 }
 

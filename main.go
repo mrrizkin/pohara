@@ -26,11 +26,10 @@ import (
 func main() {
 	var app *fx.App
 
-	if len(os.Args) > 1 && os.Args[1] == "cli" {
-		os.Args = append(os.Args[:1], os.Args[2:]...)
-		app = bootstrap.Console()
-	} else {
+	if len(os.Args) > 1 && os.Args[1] == "serve" {
 		app = bootstrap.App()
+	} else {
+		app = bootstrap.Console()
 	}
 
 	if err := app.Err(); err != nil {

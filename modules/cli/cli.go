@@ -34,12 +34,17 @@ var Module = fx.Module("cli",
 )
 
 func New(config *config.Config, logger *logger.ZeroLog) *CLI {
+	command := &cobra.Command{
+		Use:   config.App.Name,
+		Short: config.App.Name + " CLI",
+	}
+	command.AddCommand(&cobra.Command{
+		Use:   "serve",
+		Short: "running the server",
+	})
 	return &CLI{
-		command: &cobra.Command{
-			Use:   config.App.Name,
-			Short: config.App.Name + " CLI",
-		},
-		log: logger,
+		command: command,
+		log:     logger,
 	}
 }
 

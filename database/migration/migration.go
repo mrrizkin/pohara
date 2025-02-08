@@ -1,12 +1,12 @@
 package migration
 
 import (
-	"github.com/mrrizkin/pohara/modules/core/migrator"
+	"github.com/mrrizkin/pohara/modules/database/migration"
 	"go.uber.org/fx"
 )
 
 var Module = fx.Module("migration",
-	migrator.ProvideMigration(
+	migration.ProvideMigration(
 		&CreateMUserTable{},
 		&CreateMRoleTable{},
 		&CreateCfgPolicyTable{},

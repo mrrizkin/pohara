@@ -24,12 +24,12 @@ func NewAuthRepository(deps AuthRepositoryDependencies) *AuthRepository {
 
 func (a *AuthRepository) GetUser(uid uint) (*model.MUser, error) {
 	var user model.MUser
-	err := a.db.Builder().Table("m_user").Select().Where("id = ?", uid).Get(&user)
+	err := a.db.First(&user, uid).Error
 	return &user, err
 }
 
 func (a *AuthRepository) GetUserAttributes(uid uint) (*model.MUserAttribute, error) {
 	var userAttributes model.MUserAttribute
-	err := a.db.Builder().Table("m_user_attribute").Select().Where("user_id = ?", uid).Get(&userAttributes)
+	err := a.db.Where("user_id = ?", uid).First(&userAttributes).Error
 	return &userAttributes, err
 }

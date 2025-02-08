@@ -1,50 +1,27 @@
 package driver
 
 import (
-	"github.com/jmoiron/sqlx"
-	_ "zombiezen.com/go/sqlite"
+	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/config"
-	"github.com/mrrizkin/pohara/modules/core/logger"
 )
 
-type Sqlite struct {
-	config *config.Config
-	log    *logger.ZeroLog
-}
+type SQLite struct{}
 
-func NewSqlite(
-	config *config.Config,
-	logger *logger.ZeroLog,
-) *Sqlite {
-	return &Sqlite{
-		config: config,
-		log:    logger,
-	}
-}
-
-func (s *Sqlite) DSN() string {
-	return s.config.Database.Host
-}
-
-func (s *Sqlite) Connect() (*sqlx.DB, error) {
-	db, err := sqlx.Open("sqlite", s.DSN())
+func (SQLite) Connect(config *config.Config) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(config.Database.Host))
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = db.Exec("PRAGMA journal_mode = WAL;")
-	if err != nil {
-		s.log.Warn("Failed to enable WAL journal mode", "error", err)
-	} else {
-		s.log.Info("Enabled WAL journal mode")
+	if err := db.Exec("PRAGMA journal_mode = WAL;").Error; err != nil {
+		return nil, err
 	}
 
-	_, err = db.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		s.log.Warn("Failed to enable foreign keys", "error", err)
-	} else {
-		s.log.Info("Enabled foreign keys")
+	if err := db.Exec("PRAGMA foreign_keys = ON;").Error; err != nil {
+		return nil, err
 	}
 
 	return db, nil
