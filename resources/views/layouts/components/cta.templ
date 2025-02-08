@@ -1,0 +1,48 @@
+package components
+
+type CallToActionButton struct {
+	Enable bool
+	Label  string
+	Link   string
+	Rel    string
+}
+
+type CallToActionProps struct {
+	Title   string
+	Image   string
+	Content string
+	Button  CallToActionButton
+}
+
+templ Cta(props CallToActionProps) {
+	<section class="section px-4">
+		<div class="section container rounded-xl shadow">
+			<div class="row mx-auto items-center justify-center">
+				<div class="md:col-5 lg:col-4">
+					<img
+						class="w-full"
+						src={ props.Image }
+						alt="call to action image"
+						width="325"
+						height="206"
+					/>
+				</div>
+				<div class="mt-5 text-center md:mt-0 md:text-left md:col-6 lg:col-5">
+					<h2>{ props.Title }</h2>
+					<p class="mt-6">
+						@templ.Raw(props.Content)
+					</p>
+					if props.Button.Enable {
+						<a
+							class="btn btn-primary mt-4"
+							href={ templ.SafeURL(props.Button.Link) }
+							rel={ props.Button.Rel }
+						>
+							{ props.Button.Label }
+						</a>
+					}
+				</div>
+			</div>
+		</div>
+	</section>
+}

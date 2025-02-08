@@ -1,0 +1,112 @@
+package layouts
+
+import (
+	"net/url"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/mrrizkin/pohara/app/config"
+	neoweb "github.com/mrrizkin/pohara/modules/neoweb/templ"
+	"github.com/mrrizkin/pohara/modules/neoweb/vite"
+	"github.com/mrrizkin/pohara/resources/views/layouts/components"
+	"github.com/mrrizkin/pohara/resources/views/layouts/partials"
+)
+
+type BaseProps struct {
+	Title       string
+	MetaTitle   string
+	Description string
+	Image       string
+	NoIndex     bool
+	Canonical   string
+	Header      []templ.Component
+}
+
+templ Base(props BaseProps) {
+	{{
+fiberCtx := ctx.Value(neoweb.FiberContextKey).(*fiber.Ctx)
+config := fiberCtx.Locals("config").(*config.Config)
+vite := fiberCtx.Locals("vite").(*vite.Vite)
+
+title := config.Site.Title
+if len(props.MetaTitle) > 0 {
+	title = props.MetaTitle
+} else if len(props.Title) > 0 {
+	title = props.Title
+}
+
+description := config.Site.Metadata.MetaDescription
+if len(props.Description) > 0 {
+	description = props.Description
+}
+
+urlPath, _ := url.JoinPath(config.Site.BaseURL, fiberCtx.Path())
+image, _ := url.JoinPath(config.Site.BaseURL, config.Site.Metadata.MetaImage)
+if len(props.Image) > 0 {
+	propImage, _ := url.JoinPath(config.Site.BaseURL, config.Site.Metadata.MetaImage)
+	image = propImage
+}
+	}}
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			// favicon
+			<link rel="shortcut icon" href={ config.Site.Favicon }/>
+			// theme meta
+			<meta name="theme-name" content="bigspring-light-astro"/>
+			<meta name="msapplication-TileColor" content="#000000"/>
+			<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff"/>
+			<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000"/>
+			<meta name="generator" content="templ"/>
+			<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+			// responsive meta
+			<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"/>
+			// title
+			<title>{ title } </title>
+			// canonical url
+			if (len(props.Canonical) > 0) {
+				<link rel="canonical" href={ props.Canonical } item-prop="url"/>
+			}
+			// noindex robots
+			if (props.NoIndex) {
+				<meta name="robots" content="noindex,nofollow"/>
+			}
+			// google font css
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+			// meta-description
+			<meta name="description" content={ description }/>
+			// author from config.json
+			<meta name="author" content={ config.Site.Metadata.MetaAuthor }/>
+			// og-title
+			<meta property="og:title" content={ title }/>
+			// og-description
+			<meta property="og:description" content={ description }/>
+			<meta property="og:type" content="website"/>
+			<meta property="og:url" content={ urlPath }/>
+			// twitter-title
+			<meta name="twitter:title" content={ title }/>
+			// twitter-description
+			<meta name="twitter:description" content={ description }/>
+			// og-image
+			<meta property="og:image" content={ image }/>
+			// twitter-image
+			<meta name="twitter:image" content={ image }/>
+			<meta name="twitter:card" content="summary_large_image"/>
+			@templ.Raw(vite.Entry("resources/client/index.js"))
+			if props.Header != nil {
+				for _, header := range props.Header {
+					@header
+				}
+			}
+		</head>
+		<body>
+			@components.TwSizeIndicator(config)
+			@partials.Header(config, fiberCtx.Path())
+			<main id="main-content">
+				{ children... }
+			</main>
+			@partials.Footer(config)
+		</body>
+	</html>
+}

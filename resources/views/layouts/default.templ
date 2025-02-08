@@ -1,0 +1,18 @@
+package layouts
+
+type DefaultProps struct {
+	Title string
+}
+
+templ Default(props DefaultProps) {
+	<section class="section">
+		<div class="container">
+			<h1 class="h2 mb-8 text-center">
+				{ props.Title }
+			</h1>
+			<div class="content">
+				{ children... }
+			</div>
+		</div>
+	</section>
+}

@@ -1,0 +1,46 @@
+package partials
+
+import "github.com/mrrizkin/pohara/app/config"
+import "fmt"
+
+templ Footer(config *config.Config) {
+	<footer class="section bg-theme-light pb-0">
+		<div class="container">
+			// footer menu 
+			<div class="row">
+				for _, col := range navigation.footer {
+					<div class="mb-12 sm:col-6 lg:col-3">
+						<h2 class="h4">{ col.name }</h2>
+						<ul class="mt-6">
+							if col.children != nil {
+								for _, item := range col.children {
+									<li class="mb-1">
+										<a href={ templ.SafeURL(item.url) } rel="">
+											{ item.name }
+										</a>
+									</li>
+								}
+							}
+						</ul>
+					</div>
+				}
+				// social icons
+				<div class="md-12 sm:col-6 lg:col-3">
+					<a href="/" aria-label="Bigspring">
+						<img src={ config.Site.Logo } width={ fmt.Sprintf("%d", config.Site.LogoWidth) } height={ fmt.Sprintf("%d", config.Site.LogoHeight) } alt={ config.Site.LogoText }/>
+					</a>
+					<p class="mt-3 mb-6">
+						{ config.Site.Params.FooterContent }
+					</p>
+					// <Social source={social} className="social-icons mb-8" />
+				</div>
+			</div>
+			// copyright
+			<div class="border-t border-border py-6">
+				<p class="text-sm text-center">
+					{ config.Site.Params.Copyright }
+				</p>
+			</div>
+		</div>
+	</footer>
+}

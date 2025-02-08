@@ -2,5 +2,5 @@ package resources
 
 import "embed"
 
-//go:embed frontend
-var Frontend embed.FS
+//go:embed admin
+var Admin embed.FS

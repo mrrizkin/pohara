@@ -1,0 +1,74 @@
+package pages
+
+import (
+	"fmt"
+	"github.com/mrrizkin/pohara/resources/views/layouts"
+	"github.com/mrrizkin/pohara/resources/views/layouts/components"
+)
+
+type PricingButton struct {
+	Label string
+	Link  string
+}
+
+type PricingPlan struct {
+	Title       string
+	Subtitle    string
+	Price       int
+	Type        string
+	Recommended bool
+	Features    []string
+	Button      PricingButton
+}
+
+type PricingProps struct {
+	Plans        []PricingPlan
+	CallToAction components.CallToActionProps
+}
+
+templ Pricing(props PricingProps) {
+	@layouts.Base(layouts.BaseProps{
+		Title:       "Pricing",
+		Description: "meta description",
+	}) {
+		<section class="section pb-0">
+			<div class="container">
+				<h1 class="text-center font-normal">Pricing</h1>
+				<div class="section row -mt-10 justify-center md:mt-0">
+					for _, plan := range props.Plans {
+						{{
+	class := "col-12 md:col-4"
+	classLink := "btn mt-5"
+	if plan.Recommended {
+		class += " col-recommended"
+		classLink += " btn-primary"
+	} else {
+		class += " lg:px-0"
+		classLink += " btn-outline-primary"
+	}
+						}}
+						<div class={ class }>
+							<div class="card text-center">
+								<h4>{ plan.Title }</h4>
+								<div class="mt-5">
+									<span class="text-5xl text-dark">${ fmt.Sprintf("%d", plan.Price) }</span>
+									<span>/ { plan.Type }</span>
+								</div>
+								<h5 class="mt-2 font-normal text-text">{ plan.Subtitle }</h5>
+								<ul class="mt-5">
+									for _, feature := range plan.Features {
+										<li class="mb-[10px] leading-5">{ feature }</li>
+									}
+								</ul>
+								<a class={ classLink } href={ templ.SafeURL(plan.Button.Link) }>
+									{ plan.Button.Label }
+								</a>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		</section>
+		@components.Cta(props.CallToAction)
+	}
+}

@@ -1,0 +1,107 @@
+package partials
+
+import "github.com/mrrizkin/pohara/app/config"
+import "github.com/mrrizkin/pohara/resources/views/layouts/components"
+
+templ Header(config *config.Config, path string) {
+	<header class="header">
+		<nav class="navbar container">
+			<!-- logo -->
+			<div class="order-0">
+				@components.Logo(components.LogoProps{
+					Config: config,
+				})
+			</div>
+			<!-- navbar toggler -->
+			<input id="nav-toggle" type="checkbox" class="hidden"/>
+			<label
+				id="show-button"
+				for="nav-toggle"
+				class="order-2 flex cursor-pointer items-center md:order-1 md:hidden"
+			>
+				<svg class="h-6 fill-current" viewBox="0 0 20 20">
+					<title>Menu Open</title>
+					<path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
+				</svg>
+			</label>
+			<label
+				id="hide-button"
+				for="nav-toggle"
+				class="order-2 cursor-pointer items-center md:order-1"
+			>
+				<svg class="h-6 fill-current" viewBox="0 0 20 20">
+					<title>Menu Close</title>
+					<polygon
+						points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+						transform="rotate(45 10 10)"
+					></polygon>
+				</svg>
+			</label>
+			<!-- /navbar toggler -->
+			<ul
+				id="nav-menu"
+				class="navbar-nav order-3 hidden w-full md:order-1 md:flex md:w-auto md:space-x-3"
+			>
+				for _, menu := range navigation.main {
+					if menu.children != nil {
+						<li class="nav-item nav-dropdown group relative">
+							<span class="nav-link inline-flex items-center">
+								{ menu.name }
+								<svg class="h-4 w-4 fill-current" viewBox="0 0 20 20">
+									<path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"></path>
+								</svg>
+							</span>
+							<ul class="nav-dropdown-list hidden group-hover:block md:invisible md:absolute md:block md:opacity-0 md:group-hover:visible md:group-hover:opacity-100">
+								for _, child := range menu.children {
+									<li class="nav-dropdown-item">
+										{{
+	class := "nav-dropdown-link block"
+	if path == child.url {
+		class += " nav-link-active"
+	}
+										}}
+										<a
+											href={ templ.SafeURL(child.url) }
+											class={ class }
+										>
+											{ child.name }
+										</a>
+									</li>
+								}
+							</ul>
+						</li>
+					} else {
+						{{
+	class := "nav-link block"
+	if path == menu.url {
+		class += " nav-link-active"
+	}
+						}}
+						<li class="nav-item">
+							<a
+								href={ templ.SafeURL(menu.url) }
+								class={ class }
+							>
+								{ menu.name }
+							</a>
+						</li>
+					}
+				}
+				if config.Site.NavButton.Enable {
+					<div class="block md:hidden">
+						<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.Site.NavButton.Link) }>
+							{ config.Site.NavButton.Label }
+						</a>
+					</div>
+				}
+			</ul>
+			if config.Site.NavButton.Enable {
+				<div class="order-1 ml-auto hidden items-center md:order-2 md:ml-0 md:flex md:min-w-[150px] lg:min-w-[200px]">
+					<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.Site.NavButton.Link) }>
+						{ config.Site.NavButton.Label }
+					</a>
+				</div>
+			}
+		</nav>
+	</header>
+}

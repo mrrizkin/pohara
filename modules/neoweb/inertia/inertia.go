@@ -52,14 +52,17 @@ func New(deps Dependencies) (*Inertia, error) {
 	}
 
 	if deps.Config.Inertia.ManifestPath != "" {
-		options = append(options, gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)))
+		options = append(
+			options,
+			gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)),
+		)
 	}
 
 	if deps.Config.Inertia.EncryptHistory {
 		options = append(options, gonertia.WithEncryptHistory(deps.Config.Inertia.EncryptHistory))
 	}
 
-	r, err := resources.Frontend.Open(deps.Config.Inertia.EntryPath)
+	r, err := resources.Admin.Open(deps.Config.Inertia.EntryPath)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +237,8 @@ func copyContextToFiberContext(ctx interface{}, requestContext *fasthttp.Request
 		for i := 0; i < contextValues.NumField(); i++ {
 			reflectValue := contextValues.Field(i)
 			/* #nosec */
-			reflectValue = reflect.NewAt(reflectValue.Type(), unsafe.Pointer(reflectValue.UnsafeAddr())).Elem()
+			reflectValue = reflect.NewAt(reflectValue.Type(), unsafe.Pointer(reflectValue.UnsafeAddr())).
+				Elem()
 
 			reflectField := contextKeys.Field(i)
 

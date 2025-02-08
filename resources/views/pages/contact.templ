@@ -1,0 +1,75 @@
+package pages
+
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/mrrizkin/pohara/app/config"
+	neoweb "github.com/mrrizkin/pohara/modules/neoweb/templ"
+	"github.com/mrrizkin/pohara/resources/views/layouts"
+)
+
+templ Contact() {
+	{{
+fiberCtx := ctx.Value(neoweb.FiberContextKey).(*fiber.Ctx)
+config := fiberCtx.Locals("config").(*config.Config)
+	}}
+	@layouts.Base(layouts.BaseProps{
+		Title:       "Contact Us",
+		Description: "meta description",
+	}) {
+		<section class="section">
+			<div class="container">
+				<h1 class="text-center font-normal">Contact Us</h1>
+				<div class="section row pb-0">
+					<div class="col-12 md:col-6 lg:col-7">
+						<form class="contact-form" method="POST" action={ templ.SafeURL(config.Site.Params.ContactFormAction) }>
+							<div class="mb-3">
+								<input
+									class="form-input w-full rounded"
+									name="name"
+									type="text"
+									placeholder="Name"
+									required
+								/>
+							</div>
+							<div class="mb-3">
+								<input
+									class="form-input w-full rounded"
+									name="email"
+									type="email"
+									placeholder="Your email"
+									required
+								/>
+							</div>
+							<div class="mb-3">
+								<input
+									class="form-input w-full rounded"
+									name="subject"
+									type="text"
+									placeholder="Subject"
+									required
+								/>
+							</div>
+							<div class="mb-3">
+								<textarea
+									class="form-textarea w-full rounded-md"
+									rows="7"
+									placeholder="Your message"
+								></textarea>
+							</div>
+							<button type="submit" class="btn btn-primary">Send Now</button>
+						</form>
+					</div>
+					<div class="content col-12 md:col-6 lg:col-5">
+						<h4>Why you should contact us!</h4>
+						<p class="mt-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Velit recusandae voluptates doloremque veniam temporibus porro culpa ipsa, nisi soluta minima saepe laboriosam debitis nesciunt.</p>
+						<ul class="contact-list mt-5 list-none pl-0">
+							<li><strong class="text-dark">phone: +88 125 256 452</strong> </li>
+							<li><strong class="text-dark">Mail: <a href="mailto:info@bigspring.com">info@bigspring.com</a></strong> </li>
+							<li><strong class="text-dark">Address: 360 Main rd, Rio, Brazil</strong> </li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+	}
+}

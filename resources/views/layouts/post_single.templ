@@ -1,0 +1,28 @@
+package layouts
+
+type PostSingleProps struct {
+	Title string
+	Image string
+}
+
+templ PostSingle(props PostSingleProps) {
+	<section class="section">
+		<div class="container">
+			<div class="row justify-center">
+				<div class="col-12 md:col-8">
+					<article class="text-center">
+						if len(props.Image) > 0 {
+							<img src={ props.Image } height="500" width="1000" alt={ props.Title } class="rounded-lg"/>
+						}
+						<h1 class="h2 text-left my-6">
+							{ props.Title }
+						</h1>
+						<div class="content mb-16 text-left">
+							{ children... }
+						</div>
+					</article>
+				</div>
+			</div>
+		</div>
+	</section>
+}

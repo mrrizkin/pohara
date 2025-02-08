@@ -30,6 +30,8 @@ type Config struct {
 		SSLmode  string `env:"DB_SSLMODE,default=disable"`
 	}
 
+	Site Site
+
 	Log struct {
 		Level     string `env:"LOG_LEVEL,default=debug"`
 		Console   bool   `env:"LOG_CONSOLE,default=true"`
@@ -80,7 +82,7 @@ type Config struct {
 		ManifestPath   string `env:"INERTIA_VITE_MANIFEST_PATH,default=public/build/manifest.json"`
 		ContainerID    string `env:"INERTIA_CONTAINER_ID,default=app"`
 		EncryptHistory bool   `env:"INERTIA_ENCRYPT_HISTORY,default=true"`
-		EntryPath      string `env:"INERTIA_ENTRY_PATH,default=frontend/index.html"`
+		EntryPath      string `env:"INERTIA_ENTRY_PATH,default=admin/index.html"`
 	}
 
 	StoragePath string `env:"STORAGE_PATH,default=storage"`

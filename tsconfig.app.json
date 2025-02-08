@@ -26,8 +26,8 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/assets/": ["./resources/assets/*"],
-			"@/*": ["./resources/frontend/*"]
+			"@/*": ["./resources/admin/*"]
 		}
 	},
-	"include": ["resources/frontend"]
+	"include": ["resources/admin"]
 }
