@@ -19,8 +19,10 @@ type WebRouterDependencies struct {
 
 	AuthMiddleware *middleware.AuthMiddleware
 
-	Dashboard *admin.DashboardController
-	Setting   *admin.SettingController
+	Dashboard   *admin.DashboardController
+	Setting     *admin.SettingController
+	User        *admin.UserController
+	Integration *admin.IntegrationController
 
 	Setup *controllers.SetupController
 
@@ -52,11 +54,17 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		auth.Post("/register", deps.Auth.Register).Name("register")
 		auth.Post("/logout", deps.AuthMiddleware.Authenticated, deps.Auth.Logout).Name("logout")
 
+		user := admin.Group("/users", deps.AuthMiddleware.Authenticated).Name("user.")
+		user.Get("/", deps.User.Index).Name("index")
+
+		integration := admin.Group("/integrations", deps.AuthMiddleware.Authenticated).Name("integration.")
+		integration.Get("/", deps.Integration.Index).Name("index")
+
 		setting := admin.Group("/settings", deps.AuthMiddleware.Authenticated).Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")
 		setting.Get("/account", deps.Setting.AccountPage).Name("account")
 		setting.Get("/appearance", deps.Setting.AppearancePage).Name("appearance")
-		setting.Get("/notifications", deps.Setting.NotificationsPage).Name("notifications")
+		setting.Get("/notifications", deps.Setting.NotificationPage).Name("notifications")
 		setting.Get("/display", deps.Setting.DisplayPage).Name("display")
 
 		admin.Get("*", func(ctx *fiber.Ctx) error {

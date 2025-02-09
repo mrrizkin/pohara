@@ -18,5 +18,7 @@ var Module = fx.Module("controllers",
 
 		admin.NewSettingController,
 		admin.NewDashboardController,
+		admin.NewUserController,
+		admin.NewIntegrationController,
 	),
 )

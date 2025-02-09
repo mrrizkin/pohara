@@ -2,11 +2,13 @@ package repository
 
 import (
 	"math"
+	"time"
 
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/model"
+	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -37,6 +39,71 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 		hashing:   deps.Hashing,
 		db:        deps.Database,
 	}
+}
+
+func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
+	policy := model.CfgPolicy{
+		Name:      "Allow All Function",
+		Action:    access.ActionGeneralAll,
+		Effect:    access.EffectAllow,
+		Resource:  "all",
+		CreatedAt: sql.Time(time.Now()),
+		UpdatedAt: sql.Time(time.Now()),
+	}
+
+	role := model.MRole{
+		Name:        "Super User",
+		Description: "the most highly privilege role",
+		CreatedAt:   sql.Time(time.Now()),
+		UpdatedAt:   sql.Time(time.Now()),
+	}
+
+	tx := r.db.Begin()
+
+	if err := tx.Where(&model.CfgPolicy{
+		Name:     "Allow All Function",
+		Action:   access.ActionGeneralAll,
+		Effect:   access.EffectAllow,
+		Resource: "all",
+	}).FirstOrCreate(&policy).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Where(&model.MRole{
+		Name:        "Super User",
+		Description: "the most highly privilege role",
+	}).FirstOrCreate(&role).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.FirstOrCreate(&user).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	userRole := model.JtUserRole{
+		RoleID: role.ID,
+		UserID: user.ID,
+	}
+
+	if err := tx.FirstOrCreate(&userRole).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	rolePolicy := model.JtRolePolicy{
+		PolicyID: policy.ID,
+		RoleID:   role.ID,
+	}
+
+	if err := tx.FirstOrCreate(&rolePolicy).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 func (r *UserRepository) Create(user *model.MUser) error {

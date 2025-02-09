@@ -2,11 +2,14 @@ package service
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/expr-lang/expr"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 
+	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/repository"
 	"github.com/mrrizkin/pohara/modules/core/logger"
@@ -51,20 +54,13 @@ func (a *AuthService) Authenticated(ctx *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	user, err := a.authRepo.GetUser(uid)
-	if err != nil {
-		return fiber.ErrUnauthorized
-	}
-
-	userAttributes, err := a.authRepo.GetUserAttributes(uid)
+	userContext, err := a.authRepo.GetUserContext(ctx.Context(), uid)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		a.log.Error("failed to get user attributes", "error", err)
 		return fiber.ErrUnauthorized
 	}
 
-	ctx.Locals("__auth-user", user)
-	ctx.Locals("__auth-user-attributes", userAttributes)
-
+	ctx.Locals("__auth-user-context", userContext)
 	return nil
 }
 
@@ -98,10 +94,84 @@ func (a *AuthService) Logout(ctx *fiber.Ctx) error {
 	return nil
 }
 
+type Resource interface {
+	TableName() string
+}
+
 func (a *AuthService) Can(
 	ctx *fiber.Ctx,
 	action access.Action,
-	resources interface{},
+	resource Resource,
 ) bool {
+	userContext, ok := ctx.Locals("__auth-user-context").(*repository.UserContext)
+	if !ok {
+		return false
+	}
+
+	if userContext == nil {
+		return false
+	}
+
+	env := map[string]interface{}{
+		"User":           userContext.User,
+		"User.Attribute": userContext.UserAttribute,
+		"User.Setting":   userContext.UserSetting,
+		"Resource":       resource,
+	}
+
+	for _, role := range userContext.Roles {
+		for _, policy := range role.Policies {
+			// special super user check
+			if policy.Action == access.ActionGeneralAll && policy.Resource == "all" {
+				return true
+			}
+
+			if policy.Resource == resource.TableName() && policy.Action == action {
+				if !policy.Condition.Valid {
+					return policy.Effect == "allow"
+				}
+
+				condition := strings.TrimSpace(policy.Condition.String)
+				if len(condition) == 0 {
+					return policy.Effect == "allow"
+				}
+
+				env["Role"] = role.Name
+				result, err := a.evaluatePolicy(policy, env)
+				if err != nil {
+					a.log.Error("failed to evaluate policy", "error", err)
+					return false
+				}
+				if result {
+					return policy.Effect == "allow"
+				}
+			}
+		}
+	}
+
 	return false
+}
+
+func (a *AuthService) evaluatePolicy(
+	policy model.CfgPolicy,
+	env map[string]interface{},
+) (bool, error) {
+	program, err := expr.Compile(policy.Condition.String, expr.Env(env))
+	if err != nil {
+		return false, err
+	}
+
+	output, err := expr.Run(program, env)
+	if err != nil {
+		return false, err
+	}
+
+	result, ok := output.(bool)
+	if !ok {
+		err := errors.New("evaluation output is not boolean")
+		a.log.Error("failed to evaluate policy", "error", err)
+		return false, err
+	}
+
+	return result, nil
 }

@@ -6,6 +6,7 @@ import "fmt"
 type Action string
 
 var (
+	ActionGeneralAll    = NewResourceAction("general", "all")
 	ActionGeneralCreate = NewResourceAction("general", "create")
 	ActionGeneralRead   = NewResourceAction("general", "read")
 	ActionGeneralUpdate = NewResourceAction("general", "update")

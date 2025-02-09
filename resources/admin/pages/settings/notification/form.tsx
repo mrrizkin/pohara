@@ -11,7 +11,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 
-const notificationsFormSchema = z.object({
+const notificationFormSchema = z.object({
 	type: z.enum(["all", "mentions", "none"], {
 		required_error: "You need to select a notification type.",
 	}),
@@ -22,23 +22,23 @@ const notificationsFormSchema = z.object({
 	security_emails: z.boolean(),
 });
 
-type NotificationsFormValues = z.infer<typeof notificationsFormSchema>;
+type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
 // This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
+const defaultValues: Partial<NotificationFormValues> = {
 	communication_emails: false,
 	marketing_emails: false,
 	social_emails: true,
 	security_emails: true,
 };
 
-export function NotificationsForm() {
-	const form = useForm<NotificationsFormValues>({
-		resolver: zodResolver(notificationsFormSchema),
+export function NotificationForm() {
+	const form = useForm<NotificationFormValues>({
+		resolver: zodResolver(notificationFormSchema),
 		defaultValues,
 	});
 
-	function onSubmit(data: NotificationsFormValues) {
+	function onSubmit(data: NotificationFormValues) {
 		toast({
 			title: "You submitted the following values:",
 			description: (

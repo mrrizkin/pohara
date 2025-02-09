@@ -9,7 +9,6 @@ import (
 	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/core/validator"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
-	"github.com/romsar/gonertia"
 	"go.uber.org/fx"
 )
 
@@ -19,7 +18,8 @@ type SetupController struct {
 	validator *validator.Validator
 	hash      *hash.Hashing
 
-	userRepo *repository.UserRepository
+	userRepo    *repository.UserRepository
+	settingRepo *repository.SettingRepository
 }
 
 type SetupControllerDependencies struct {
@@ -30,7 +30,8 @@ type SetupControllerDependencies struct {
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
 
-	UserRepository *repository.UserRepository
+	UserRepository    *repository.UserRepository
+	SettingRepository *repository.SettingRepository
 }
 
 func NewSetupController(deps SetupControllerDependencies) *SetupController {
@@ -40,12 +41,22 @@ func NewSetupController(deps SetupControllerDependencies) *SetupController {
 		validator: deps.Validator,
 		hash:      deps.Hashing,
 
-		userRepo: deps.UserRepository,
+		userRepo:    deps.UserRepository,
+		settingRepo: deps.SettingRepository,
 	}
 }
 
 func (c *SetupController) Index(ctx *fiber.Ctx) error {
-	return c.inertia.Render(ctx, "setup/index", gonertia.Props{})
+	isSet, err := c.settingRepo.IsSet()
+	if err != nil {
+		return err
+	}
+
+	if isSet {
+		return c.inertia.Redirect(ctx, AuthLoginRoute)
+	}
+
+	return c.inertia.Render(ctx, "setup/index")
 }
 
 type AdminUserPayload struct {
@@ -103,7 +114,7 @@ func (c *SetupController) Setup(ctx *fiber.Ctx) error {
 		Password: password,
 	}
 
-	if err := c.userRepo.Create(user); err != nil {
+	if err := c.userRepo.SetupSuperUser(user); err != nil {
 		return err
 	}
 

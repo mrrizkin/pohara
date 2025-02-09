@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/gostackparse v0.7.0
 	github.com/a-h/templ v0.3.833
 	github.com/dgraph-io/ristretto/v2 v2.1.0
+	github.com/expr-lang/expr v1.16.9
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gofiber/contrib/fiberzerolog v1.0.2

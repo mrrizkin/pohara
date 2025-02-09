@@ -13,7 +13,6 @@ func (m *CreateMUserAttributeTable) Up(schema *migration.Schema) {
 		table.ID()
 		table.BigInteger("user_id")
 		table.Text("location")
-		table.Text("language")
 		table.Timestamps()
 	})
 }

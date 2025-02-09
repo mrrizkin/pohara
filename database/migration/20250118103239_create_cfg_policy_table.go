@@ -12,7 +12,7 @@ func (m *CreateCfgPolicyTable) Up(schema *migration.Schema) {
 	schema.Create("cfg_policy", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("name")
-		table.Json("conditions")
+		table.Text("condition").Nullable()
 		table.Text("action")
 		table.Text("effect")
 		table.Text("resource")

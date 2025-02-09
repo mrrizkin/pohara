@@ -12,6 +12,9 @@ var Module = fx.Module("migration",
 		&CreateCfgPolicyTable{},
 		&CreateMUserAttributeTable{},
 		&CreateCfgSettingTable{},
+		&CreateMUserSettingTable{},
+		&CreateJtRolePolicyTable{},
+		&CreateJtUserRoleTable{},
 		/** PLACEHOLDER **/
 	),
 )

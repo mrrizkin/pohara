@@ -27,7 +27,7 @@ type Migration interface {
 }
 
 type MigrationHistory struct {
-	ID        string    `json:"id" gorm:"primary_key"`
+	ID        string    `json:"id"         gorm:"primary_key"`
 	Batch     int       `json:"batch"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -320,16 +320,41 @@ func (m *Migrator) status() error {
 
 	// Print table header
 	fmt.Println("\nMigration Status:")
-	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
-	fmt.Printf("| %-*s | %-*s | %-*s |\n", maxMigrationLen, "Migration", maxBatchLen, "Batch", maxExecutedLen, "Executed At")
-	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
+	fmt.Printf(
+		"+-%s-+-%s-+-%s-+\n",
+		strings.Repeat("-", maxMigrationLen),
+		strings.Repeat("-", maxBatchLen),
+		strings.Repeat("-", maxExecutedLen),
+	)
+	fmt.Printf(
+		"| %-*s | %-*s | %-*s |\n",
+		maxMigrationLen,
+		"Migration",
+		maxBatchLen,
+		"Batch",
+		maxExecutedLen,
+		"Executed At",
+	)
+	fmt.Printf(
+		"+-%s-+-%s-+-%s-+\n",
+		strings.Repeat("-", maxMigrationLen),
+		strings.Repeat("-", maxBatchLen),
+		strings.Repeat("-", maxExecutedLen),
+	)
 
 	// Print migration statuses
 	for _, migration := range m.migrations {
 		id := migration.ID()
 		if history, exists := executedMigrations[id]; exists {
-			fmt.Printf("| %-*s | %-*d | %-*s |\n",
-				maxMigrationLen, id, maxBatchLen, history.Batch, maxExecutedLen, history.CreatedAt.Format("2006-01-02 15:04:05"))
+			fmt.Printf(
+				"| %-*s | %-*d | %-*s |\n",
+				maxMigrationLen,
+				id,
+				maxBatchLen,
+				history.Batch,
+				maxExecutedLen,
+				history.CreatedAt.Format("2006-01-02 15:04:05"),
+			)
 		} else {
 			fmt.Printf("| %-*s | %-*s | %-*s |\n",
 				maxMigrationLen, id, maxBatchLen, "Pending", maxExecutedLen, "Not Executed")
@@ -337,7 +362,12 @@ func (m *Migrator) status() error {
 	}
 
 	// Print table footer
-	fmt.Printf("+-%s-+-%s-+-%s-+\n", strings.Repeat("-", maxMigrationLen), strings.Repeat("-", maxBatchLen), strings.Repeat("-", maxExecutedLen))
+	fmt.Printf(
+		"+-%s-+-%s-+-%s-+\n",
+		strings.Repeat("-", maxMigrationLen),
+		strings.Repeat("-", maxBatchLen),
+		strings.Repeat("-", maxExecutedLen),
+	)
 	return nil
 }
 
