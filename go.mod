@@ -4,7 +4,7 @@ go 1.23.4
 
 require (
 	github.com/DataDog/gostackparse v0.7.0
-	github.com/a-h/templ v0.3.819
+	github.com/a-h/templ v0.3.833
 	github.com/dgraph-io/ristretto/v2 v2.1.0
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/go-sql-driver/mysql v1.8.1

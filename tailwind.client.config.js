@@ -44,7 +44,7 @@ if (theme.fonts.font_family.secondary) {
 }
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
 	content: ["./resources/views/**/*.{go,templ}", "./resources/client/**/*.{js,ts,jsx,tsx}"],
 	safelist: [{ pattern: /^swiper-/ }],
 	darkMode: "class",
