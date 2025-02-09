@@ -12,13 +12,7 @@ import (
 	"github.com/mrrizkin/pohara/modules/server"
 )
 
-type ClientRouterDependencies struct {
-	fx.In
-
-	ClientPage *controllers.ClientPageController
-}
-
-type AdminRouterDependencies struct {
+type WebRouterDependencies struct {
 	fx.In
 
 	Inertia *inertia.Inertia
@@ -31,9 +25,11 @@ type AdminRouterDependencies struct {
 	Setup *controllers.SetupController
 
 	Auth *controllers.AuthController
+
+	ClientPage *controllers.ClientPageController
 }
 
-func ClientRouter(deps ClientRouterDependencies) server.WebRouter {
+func WebRouter(deps WebRouterDependencies) server.WebRouter {
 	return server.NewWebRouter("/", func(r fiber.Router) {
 		r.Get("/", deps.ClientPage.HomePage).Name("homepage")
 		r.Get("/blog", deps.ClientPage.HomePage).Name("blog")
@@ -41,14 +37,9 @@ func ClientRouter(deps ClientRouterDependencies) server.WebRouter {
 		r.Get("/contact", deps.ClientPage.Contact).Name("contact")
 		r.Get("/faq", deps.ClientPage.Faq).Name("faq")
 
-		r.Get("*", deps.ClientPage.NotFound).Name("error.not-found")
-	}, "client.")
-}
-
-func AdminRouter(deps AdminRouterDependencies) server.WebRouter {
-	return server.NewWebRouter("/_/", func(r fiber.Router) {
-		admin := r.Group("/", deps.Inertia.Middleware)
-		admin.Get("/", deps.AuthMiddleware.Authenticated, deps.Dashboard.Index).Name("dashboard.index")
+		admin := r.Group("/_/", deps.Inertia.Middleware)
+		admin.Get("/", deps.AuthMiddleware.Authenticated, deps.Dashboard.Index).
+			Name("dashboard.index")
 
 		setup := admin.Group("/setup").Name("setup.")
 		setup.Get("/", deps.Setup.Index).Name("index")
@@ -71,5 +62,7 @@ func AdminRouter(deps AdminRouterDependencies) server.WebRouter {
 		admin.Get("*", func(ctx *fiber.Ctx) error {
 			return deps.Inertia.Render(ctx, "error/not-found", gonertia.Props{})
 		}).Name("error.not-found")
+
+		r.Get("*", deps.ClientPage.NotFound).Name("error.not-found")
 	}, "admin.")
 }

@@ -8,8 +8,7 @@ import (
 
 var Module = fx.Module("routes",
 	fx.Provide(
-		server.AsWebRouter(ClientRouter),
-		server.AsWebRouter(AdminRouter),
+		server.AsWebRouter(WebRouter),
 		server.AsApiRouter(ApiRouterV1),
 	),
 )
