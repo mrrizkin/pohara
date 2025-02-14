@@ -9,6 +9,7 @@ import (
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 
+	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/repository"
@@ -100,7 +101,7 @@ type Resource interface {
 
 func (a *AuthService) Can(
 	ctx *fiber.Ctx,
-	action access.Action,
+	actionType access.Action,
 	resource Resource,
 ) bool {
 	userContext, ok := ctx.Locals("__auth-user-context").(*repository.UserContext)
@@ -116,23 +117,23 @@ func (a *AuthService) Can(
 		"User":           userContext.User,
 		"User.Attribute": userContext.UserAttribute,
 		"User.Setting":   userContext.UserSetting,
-		"Resource":       resource,
+	}
+
+	resourceName := ""
+	if resource != nil {
+		resourceName = resource.TableName()
+		env["Resource"] = resource
 	}
 
 	for _, role := range userContext.Roles {
 		for _, policy := range role.Policies {
 			// special super user check
-			if policy.Action == access.ActionGeneralAll && policy.Resource == "all" {
+			if policy.Action.String() == action.SpecialAll.String() {
 				return true
 			}
 
-			if policy.Resource == resource.TableName() && policy.Action == action {
-				if !policy.Condition.Valid {
-					return policy.Effect == "allow"
-				}
-
-				condition := strings.TrimSpace(policy.Condition.String)
-				if len(condition) == 0 {
+			if policy.Resource == resourceName && policy.Action.String() == actionType.String() {
+				if !policy.Condition.Valid || len(strings.TrimSpace(policy.Condition.String)) == 0 {
 					return policy.Effect == "allow"
 				}
 
@@ -156,6 +157,7 @@ func (a *AuthService) evaluatePolicy(
 	policy model.CfgPolicy,
 	env map[string]interface{},
 ) (bool, error) {
+	// we can optimize this using precompile method.. and mapped it with policy.id as a key
 	program, err := expr.Compile(policy.Condition.String, expr.Env(env))
 	if err != nil {
 		return false, err
@@ -168,9 +170,7 @@ func (a *AuthService) evaluatePolicy(
 
 	result, ok := output.(bool)
 	if !ok {
-		err := errors.New("evaluation output is not boolean")
-		a.log.Error("failed to evaluate policy", "error", err)
-		return false, err
+		return false, errors.New("evaluation output is not boolean")
 	}
 
 	return result, nil

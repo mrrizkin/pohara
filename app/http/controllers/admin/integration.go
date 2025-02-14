@@ -4,14 +4,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/app/model"
-	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
-)
-
-var (
-	ActionIntegrationPage = access.NewResourceAction("integration", "integration-page")
 )
 
 type IntegrationController struct {
@@ -34,7 +29,7 @@ func NewIntegrationController(deps IntegrationControllerDependencies) *Integrati
 }
 
 func (c *IntegrationController) Index(ctx *fiber.Ctx) error {
-	if !c.auth.Can(ctx, ActionIntegrationPage, model.MUser{}) {
+	if !c.auth.Can(ctx, action.PageIntegration, nil) {
 		return c.inertia.Render(ctx.Status(403), "error/forbidden")
 	}
 

@@ -14,6 +14,7 @@ interface BaseNavItem {
 	title: string;
 	badge?: string;
 	icon?: React.ElementType;
+	permissions?: string[];
 }
 
 type NavLink = BaseNavItem & {

@@ -4,14 +4,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/app/model"
-	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
-)
-
-var (
-	ActionUserPage = access.NewResourceAction("user", "user-page")
 )
 
 type UserController struct {
@@ -34,7 +29,7 @@ func NewUserController(deps UserControllerDependencies) *UserController {
 }
 
 func (c *UserController) Index(ctx *fiber.Ctx) error {
-	if !c.auth.Can(ctx, ActionUserPage, model.MUser{}) {
+	if !c.auth.Can(ctx, action.PageUser, nil) {
 		return c.inertia.Render(ctx.Status(403), "error/forbidden")
 	}
 

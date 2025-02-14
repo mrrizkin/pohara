@@ -7,6 +7,7 @@ import (
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 
+	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/common/hash"
@@ -44,7 +45,7 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 	policy := model.CfgPolicy{
 		Name:      "Allow All Function",
-		Action:    access.ActionGeneralAll,
+		Action:    action.SpecialAll,
 		Effect:    access.EffectAllow,
 		Resource:  "all",
 		CreatedAt: sql.Time(time.Now()),
@@ -62,7 +63,7 @@ func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 
 	if err := tx.Where(&model.CfgPolicy{
 		Name:     "Allow All Function",
-		Action:   access.ActionGeneralAll,
+		Action:   action.All,
 		Effect:   access.EffectAllow,
 		Resource: "all",
 	}).FirstOrCreate(&policy).Error; err != nil {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
-	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/response"
@@ -76,7 +76,7 @@ type UserUpdatePayload struct {
 //	@Failure		  500		    {object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			  /user     [post]
 func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, access.ActionGeneralCreate, &model.MUser{}) {
+	if !c.authService.Can(ctx, action.Create, nil) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to create user")
 	}
 
@@ -140,7 +140,7 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
 func (c *UserController) UserFind(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, access.ActionGeneralRead, &model.MUser{}) {
+	if !c.authService.Can(ctx, action.Read, nil) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get users")
 	}
 
@@ -191,9 +191,6 @@ func (c *UserController) UserFind(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [get]
 func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, access.ActionGeneralRead, &model.MUser{}) {
-		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get user")
-	}
 
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
@@ -223,6 +220,10 @@ func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
 		)
 	}
 
+	if !c.authService.Can(ctx, action.Read, user) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get user")
+	}
+
 	return ctx.JSON(response.Success("user retrieved successfully", user))
 }
 
@@ -240,10 +241,6 @@ func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
 //	@Failure		500		{object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			/user/{id} [put]
 func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, access.ActionGeneralUpdate, &model.MUser{}) {
-		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to update user")
-	}
-
 	var err error
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
@@ -277,6 +274,10 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 			fiber.StatusInternalServerError,
 			fmt.Sprintf("failed to get user: %s", cause),
 		)
+	}
+
+	if !c.authService.Can(ctx, action.Update, user) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to update user")
 	}
 
 	if payload.Password.Valid {
@@ -326,10 +327,6 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	validator.GlobalErrorResponse	"Internal server error"
 //	@Router			/user/{id} [delete]
 func (c *UserController) UserDelete(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, access.ActionGeneralDelete, &model.MUser{}) {
-		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to delete user")
-	}
-
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
 		c.log.Error("failed to parse id", "error", err)
@@ -339,7 +336,29 @@ func (c *UserController) UserDelete(ctx *fiber.Ctx) error {
 		)
 	}
 
-	err = c.userRepo.Delete(uint(id))
+	user, err := c.userRepo.FindByID(uint(id))
+	if err != nil {
+		if err.Error() == "record not found" {
+			cause := "user not found"
+			return fiber.NewError(
+				fiber.StatusNotFound,
+				cause,
+			)
+		}
+
+		cause := "error get user"
+		c.log.Error(cause, "error", err)
+		return fiber.NewError(
+			fiber.StatusInternalServerError,
+			fmt.Sprintf("failed to get user: %s", cause),
+		)
+	}
+
+	if !c.authService.Can(ctx, action.Delete, user) {
+		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to delete user")
+	}
+
+	err = c.userRepo.Delete(user.ID)
 	if err != nil {
 		cause := "error delete user in database"
 		c.log.Error(cause, "error", err)

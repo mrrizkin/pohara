@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/romsar/gonertia"
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/http/controllers"
@@ -18,6 +17,7 @@ type WebRouterDependencies struct {
 	Inertia *inertia.Inertia
 
 	AuthMiddleware *middleware.AuthMiddleware
+	MenuMiddleware *middleware.MenuMiddleware
 
 	Dashboard   *admin.DashboardController
 	Setting     *admin.SettingController
@@ -39,36 +39,40 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		r.Get("/contact", deps.ClientPage.Contact).Name("contact")
 		r.Get("/faq", deps.ClientPage.Faq).Name("faq")
 
-		admin := r.Group("/_/", deps.Inertia.Middleware)
-		admin.Get("/", deps.AuthMiddleware.Authenticated, deps.Dashboard.Index).
-			Name("dashboard.index")
-
-		setup := admin.Group("/setup").Name("setup.")
-		setup.Get("/", deps.Setup.Index).Name("index")
-		setup.Post("/", deps.Setup.Setup).Name("setup")
-
-		auth := admin.Group("/auth").Name("auth.")
+		auth := r.Group("/_/auth", deps.Inertia.Middleware).Name("auth.")
 		auth.Get("/login", deps.Auth.LoginPage).Name("login")
 		auth.Post("/login", deps.Auth.Login).Name("login")
 		auth.Get("/register", deps.Auth.RegisterPage).Name("register")
 		auth.Post("/register", deps.Auth.Register).Name("register")
 		auth.Post("/logout", deps.AuthMiddleware.Authenticated, deps.Auth.Logout).Name("logout")
 
-		user := admin.Group("/users", deps.AuthMiddleware.Authenticated).Name("user.")
+		setup := r.Group("/_/setup", deps.Inertia.Middleware).Name("setup.")
+		setup.Get("/", deps.Setup.Index).Name("index")
+		setup.Post("/", deps.Setup.Setup).Name("setup")
+
+		authenticated := r.Group(
+			"/_/",
+			deps.Inertia.Middleware,
+			deps.AuthMiddleware.Authenticated,
+			deps.MenuMiddleware.AuthorizeMenu,
+		)
+		authenticated.Get("/", deps.Dashboard.Index).Name("dashboard.index")
+
+		user := authenticated.Group("/users").Name("user.")
 		user.Get("/", deps.User.Index).Name("index")
 
-		integration := admin.Group("/integrations", deps.AuthMiddleware.Authenticated).Name("integration.")
+		integration := authenticated.Group("/integrations").Name("integration.")
 		integration.Get("/", deps.Integration.Index).Name("index")
 
-		setting := admin.Group("/settings", deps.AuthMiddleware.Authenticated).Name("setting.")
+		setting := authenticated.Group("/settings").Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")
 		setting.Get("/account", deps.Setting.AccountPage).Name("account")
 		setting.Get("/appearance", deps.Setting.AppearancePage).Name("appearance")
 		setting.Get("/notifications", deps.Setting.NotificationPage).Name("notifications")
 		setting.Get("/display", deps.Setting.DisplayPage).Name("display")
 
-		admin.Get("*", func(ctx *fiber.Ctx) error {
-			return deps.Inertia.Render(ctx, "error/not-found", gonertia.Props{})
+		r.Get("/_/*", func(ctx *fiber.Ctx) error {
+			return deps.Inertia.Render(ctx.Status(fiber.StatusNotFound), "error/not-found")
 		}).Name("error.not-found")
 
 		r.Get("*", deps.ClientPage.NotFound).Name("error.not-found")

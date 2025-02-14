@@ -17,6 +17,8 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/core/session"
 	"github.com/mrrizkin/pohara/modules/neoweb/vite"
@@ -31,6 +33,7 @@ const (
 
 type Inertia struct {
 	core         *gonertia.Inertia
+	auth         *service.AuthService
 	sessionStore *session.Store
 }
 
@@ -40,6 +43,7 @@ type Dependencies struct {
 	SessionStore *session.Store
 	Config       *config.Config
 	Vite         *vite.Vite
+	Auth         *service.AuthService
 }
 
 func New(deps Dependencies) (*Inertia, error) {
@@ -82,6 +86,7 @@ func New(deps Dependencies) (*Inertia, error) {
 	return &Inertia{
 		core:         i,
 		sessionStore: deps.SessionStore,
+		auth:         deps.Auth,
 	}, nil
 }
 
@@ -163,10 +168,28 @@ func (i *Inertia) Back(ctx *fiber.Ctx, status ...int) error {
 	return writeResponse(ctx, w)
 }
 
+func (i *Inertia) AuthorizedMenu(ctx *fiber.Ctx, actions []access.Action) error {
+	authorizedMenu, ok := ctx.Locals("authorized-menu").(map[string]bool)
+	if !ok {
+		authorizedMenu = make(map[string]bool)
+	}
+
+	for _, action := range actions {
+		authorizedMenu[action.String()] = i.auth.Can(ctx, action, nil)
+	}
+
+	ctx.Locals("authorized-menu", authorizedMenu)
+	return nil
+}
+
 func (i *Inertia) Render(ctx *fiber.Ctx, component string, props ...gonertia.Props) error {
 	r, err := convertRequest(ctx)
 	if err != nil {
 		return err
+	}
+
+	if authorizedMenu, ok := ctx.Locals("authorized-menu").(map[string]bool); ok {
+		i.core.ShareProp("menu", authorizedMenu)
 	}
 
 	w := newResponseWriter()

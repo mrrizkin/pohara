@@ -2,7 +2,6 @@ package admin
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/romsar/gonertia"
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
@@ -25,7 +24,5 @@ func NewDashboardController(deps DashboardControllerDependencies) *DashboardCont
 }
 
 func (c *DashboardController) Index(ctx *fiber.Ctx) error {
-	return c.inertia.Render(ctx, "dashboard/index", gonertia.Props{
-		"text": "Pohara the most battery included starterkit",
-	})
+	return c.inertia.Render(ctx, "dashboard/index")
 }

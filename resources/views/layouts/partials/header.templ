@@ -8,9 +8,7 @@ templ Header(config *config.Config, path string) {
 		<nav class="navbar container">
 			<!-- logo -->
 			<div class="order-0">
-				@components.Logo(components.LogoProps{
-					Config: config,
-				})
+				@components.Logo(components.LogoProps{Config: config})
 			</div>
 			<!-- navbar toggler -->
 			<input id="nav-toggle" type="checkbox" class="hidden"/>

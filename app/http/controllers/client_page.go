@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/modules/neoweb/templ"
 	"github.com/mrrizkin/pohara/resources/views/layouts/components"
@@ -62,7 +64,11 @@ func (c *ClientPageController) HomePage(ctx *fiber.Ctx) error {
 		{
 			Title:   "It is the most advanced digital marketing and it company.",
 			Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat. consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat.",
-			Images:  []string{"/images/service-slide-1.png", "/images/service-slide-2.png", "/images/service-slide-3.png"},
+			Images: []string{
+				"/images/service-slide-1.png",
+				"/images/service-slide-2.png",
+				"/images/service-slide-3.png",
+			},
 			Button: pages.HomePageButton{
 				Enable: true,
 				Label:  "Check it out",
@@ -80,7 +86,11 @@ func (c *ClientPageController) HomePage(ctx *fiber.Ctx) error {
 		}, {
 			Title:   "It's a team of experienced and skilled people with distributions",
 			Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat. consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat.",
-			Images:  []string{"/images/service-slide-1.png", "/images/service-slide-2.png", "/images/service-slide-3.png"},
+			Images: []string{
+				"/images/service-slide-1.png",
+				"/images/service-slide-2.png",
+				"/images/service-slide-3.png",
+			},
 			Button: pages.HomePageButton{
 				Enable: true,
 				Label:  "Check it out",
@@ -89,7 +99,11 @@ func (c *ClientPageController) HomePage(ctx *fiber.Ctx) error {
 		}, {
 			Title:   "A company standing different from others",
 			Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat. consectetur adipiscing elit. Consequat tristique eget amet, tempus eu at consecttur. Leo facilisi nunc viverra tellus. Ac laoreet sit vel consquat.",
-			Images:  []string{"/images/service-slide-1.png", "/images/service-slide-2.png", "/images/service-slide-3.png"},
+			Images: []string{
+				"/images/service-slide-1.png",
+				"/images/service-slide-2.png",
+				"/images/service-slide-3.png",
+			},
 			Button: pages.HomePageButton{
 				Enable: true,
 				Label:  "Check it out",
@@ -223,5 +237,9 @@ func (c *ClientPageController) Contact(ctx *fiber.Ctx) error {
 }
 
 func (c *ClientPageController) NotFound(ctx *fiber.Ctx) error {
-	return c.templ.Render(ctx, pages.NotFound())
+	if !strings.Contains(ctx.Get("Accept"), "text/html") {
+		return ctx.SendStatus(fiber.StatusNotFound)
+	}
+
+	return c.templ.Render(ctx.Status(fiber.StatusNotFound), pages.NotFound())
 }
