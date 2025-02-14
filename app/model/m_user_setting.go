@@ -7,8 +7,8 @@ type MUserSetting struct {
 	UserID    uint             `json:"user_id"`
 	Language  string           `json:"language"`
 	Theme     string           `json:"theme"`
-	CreatedAt sql.TimeNullable `json:"created_at"`
-	UpdatedAt sql.TimeNullable `json:"updated_at"`
+	CreatedAt sql.TimeNullable `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt sql.TimeNullable `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (MUserSetting) TableName() string {

@@ -8,8 +8,8 @@ type MUser struct {
 	Username  string             `json:"username"   gorm:"unique"`
 	Password  string             `json:"-"`
 	Email     sql.StringNullable `json:"email"      gorm:"unique"`
-	CreatedAt sql.TimeNullable   `json:"created_at"`
-	UpdatedAt sql.TimeNullable   `json:"updated_at"`
+	CreatedAt sql.TimeNullable   `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt sql.TimeNullable   `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (MUser) TableName() string {

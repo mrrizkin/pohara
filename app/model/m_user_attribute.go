@@ -6,8 +6,8 @@ type MUserAttribute struct {
 	ID        uint             `json:"id"         gorm:"primaryKey"`
 	UserID    uint             `json:"user_id"`
 	Location  string           `json:"location"`
-	CreatedAt sql.TimeNullable `json:"created_at"`
-	UpdatedAt sql.TimeNullable `json:"updated_at"`
+	CreatedAt sql.TimeNullable `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt sql.TimeNullable `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (MUserAttribute) TableName() string {

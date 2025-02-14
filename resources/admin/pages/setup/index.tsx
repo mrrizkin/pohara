@@ -27,7 +27,7 @@ export default function SetupWizard() {
 		let response = await request.post("/_/setup", setupState);
 		if (response.status === 200) {
 			setProcessing(false);
-			router.visit("/_/");
+			router.visit("/_/auth/login");
 		} else {
 			setProcessing(false);
 		}
@@ -109,11 +109,11 @@ export default function SetupWizard() {
 
 	return (
 		<BaseLayout>
-			<div className="flex min-h-screen flex-col items-center bg-muted p-4 py-12">
+			<div className="bg-muted flex min-h-screen flex-col items-center p-4 py-12">
 				<Head title="Setup Wizard" />
 				<div className="mb-8 mt-4 flex items-center space-x-2">
-					<Logo className="h-12 w-12 text-foreground" />
-					<span className="text-3xl font-bold text-foreground">Setup Wizard</span>
+					<Logo className="text-foreground h-12 w-12" />
+					<span className="text-foreground text-3xl font-bold">Setup Wizard</span>
 				</div>
 				<Card className="w-full max-w-4xl">
 					<CardHeader>
@@ -124,9 +124,9 @@ export default function SetupWizard() {
 										<div
 											className={`flex h-10 w-10 items-center justify-center rounded-full ${
 												index + 1 === currentStep
-													? "border border-2 border-primary bg-secondary text-secondary-foreground"
+													? "text-secondary-foreground border border-2 border-primary bg-secondary"
 													: index + 1 < currentStep
-														? "bg-primary text-primary-foreground"
+														? "text-primary-foreground bg-primary"
 														: "bg-muted text-muted-foreground"
 											}`}>
 											{step.icon}

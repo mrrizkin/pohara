@@ -33,7 +33,7 @@ func (r *SettingRepository) Create(setting *model.CfgSetting) error {
 	}
 
 	if isSet {
-		return errors.New("you already create a setting, just update it bro..")
+		return errors.New("setting already exist")
 	}
 
 	return r.db.FirstOrCreate(setting).Error

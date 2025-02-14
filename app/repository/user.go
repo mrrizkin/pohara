@@ -2,7 +2,6 @@ package repository
 
 import (
 	"math"
-	"time"
 
 	"go.uber.org/fx"
 	"gorm.io/gorm"
@@ -44,37 +43,25 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 
 func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 	policy := model.CfgPolicy{
-		Name:      "Allow All Function",
-		Action:    action.SpecialAll,
-		Effect:    access.EffectAllow,
-		Resource:  "all",
-		CreatedAt: sql.Time(time.Now()),
-		UpdatedAt: sql.Time(time.Now()),
+		Name:     "Allow All Function",
+		Action:   action.SpecialAll,
+		Effect:   access.EffectAllow,
+		Resource: "all",
 	}
 
 	role := model.MRole{
 		Name:        "Super User",
 		Description: "the most highly privilege role",
-		CreatedAt:   sql.Time(time.Now()),
-		UpdatedAt:   sql.Time(time.Now()),
 	}
 
 	tx := r.db.Begin()
 
-	if err := tx.Where(&model.CfgPolicy{
-		Name:     "Allow All Function",
-		Action:   action.All,
-		Effect:   access.EffectAllow,
-		Resource: "all",
-	}).FirstOrCreate(&policy).Error; err != nil {
+	if err := tx.FirstOrCreate(&policy).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := tx.Where(&model.MRole{
-		Name:        "Super User",
-		Description: "the most highly privilege role",
-	}).FirstOrCreate(&role).Error; err != nil {
+	if err := tx.FirstOrCreate(&role).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -84,22 +71,18 @@ func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 		return err
 	}
 
-	userRole := model.JtUserRole{
+	if err := tx.FirstOrCreate(&model.JtUserRole{
 		RoleID: role.ID,
 		UserID: user.ID,
-	}
-
-	if err := tx.FirstOrCreate(&userRole).Error; err != nil {
+	}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	rolePolicy := model.JtRolePolicy{
+	if err := tx.FirstOrCreate(&model.JtRolePolicy{
 		PolicyID: policy.ID,
 		RoleID:   role.ID,
-	}
-
-	if err := tx.FirstOrCreate(&rolePolicy).Error; err != nil {
+	}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
