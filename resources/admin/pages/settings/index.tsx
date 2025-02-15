@@ -1,5 +1,5 @@
 import { Head } from "@inertiajs/react";
-import { LaptopMinimalCheck, MessageSquareDot, Palette, User, Wrench } from "lucide-react";
+import { Bell, MonitorCog, Palette, UserCog, Wrench } from "lucide-react";
 import React from "react";
 
 import { Separator } from "@/components/ui/separator";
@@ -59,7 +59,7 @@ export default function Settings(props: SettingsProps) {
 const sidebarNavItems = [
 	{
 		title: "Profile",
-		icon: <User size={18} />,
+		icon: <UserCog size={18} />,
 		href: "/_/settings",
 	},
 	{
@@ -74,12 +74,12 @@ const sidebarNavItems = [
 	},
 	{
 		title: "Notifications",
-		icon: <MessageSquareDot size={18} />,
+		icon: <Bell size={18} />,
 		href: "/_/settings/notifications",
 	},
 	{
 		title: "Display",
-		icon: <LaptopMinimalCheck size={18} />,
+		icon: <MonitorCog size={18} />,
 		href: "/_/settings/display",
 	},
 ];
