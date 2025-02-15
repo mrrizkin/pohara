@@ -11,7 +11,7 @@ func (m *CreateCfgSettingTable) ID() string {
 }
 
 func (m *CreateCfgSettingTable) Up(schema *migration.Schema) {
-	schema.Create("cfg_setting", func(table *migration.Blueprint) {
+	schema.CreateNotExist("cfg_setting", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("site_name")
 		table.Text("logo").Nullable()
@@ -20,5 +20,5 @@ func (m *CreateCfgSettingTable) Up(schema *migration.Schema) {
 }
 
 func (m *CreateCfgSettingTable) Down(schema *migration.Schema) {
-	schema.Drop("cfg_setting")
+	schema.DropExist("cfg_setting")
 }

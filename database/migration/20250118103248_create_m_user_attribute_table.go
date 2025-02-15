@@ -9,14 +9,14 @@ func (m *CreateMUserAttributeTable) ID() string {
 }
 
 func (m *CreateMUserAttributeTable) Up(schema *migration.Schema) {
-	schema.Create("m_user_attribute", func(table *migration.Blueprint) {
+	schema.CreateNotExist("m_user_attribute", func(table *migration.Blueprint) {
 		table.ID()
-		table.BigInteger("user_id")
+		table.BigInteger("user_id").Foreign("m_user", "id").OnDelete("CASCADE")
 		table.Text("location")
 		table.Timestamps()
 	})
 }
 
 func (m *CreateMUserAttributeTable) Down(schema *migration.Schema) {
-	schema.Drop("m_user_attribute")
+	schema.DropExist("m_user_attribute")
 }

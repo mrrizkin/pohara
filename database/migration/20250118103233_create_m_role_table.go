@@ -9,7 +9,7 @@ func (m *CreateMRoleTable) ID() string {
 }
 
 func (m *CreateMRoleTable) Up(schema *migration.Schema) {
-	schema.Create("m_role", func(table *migration.Blueprint) {
+	schema.CreateNotExist("m_role", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("name").Unique()
 		table.Text("description")
@@ -18,5 +18,5 @@ func (m *CreateMRoleTable) Up(schema *migration.Schema) {
 }
 
 func (m *CreateMRoleTable) Down(schema *migration.Schema) {
-	schema.Drop("m_role")
+	schema.DropExist("m_role")
 }

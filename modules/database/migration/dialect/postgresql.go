@@ -96,7 +96,7 @@ func (d *PostgresDialect) CreateTableSQL(table string, columns []string) string 
 
 func (d *PostgresDialect) CreateTableIfNotExistSQL(table string, columns []string) string {
 	return fmt.Sprintf(
-		"CREATE TABLE IF NOT EXIST %s (\n  %s\n)",
+		"CREATE TABLE IF NOT EXISTS %s (\n  %s\n)",
 		table,
 		strings.Join(columns, ",\n  "),
 	)
@@ -122,6 +122,10 @@ func (d *PostgresDialect) DropTableSQL(table string) string {
 	return fmt.Sprintf("DROP TABLE %s", table)
 }
 
+func (d *PostgresDialect) DropTableIfExistSQL(table string) string {
+	return fmt.Sprintf("DROP TABLE IF EXISTS %s", table)
+}
+
 func (d *PostgresDialect) RenameTableSQL(old, new string) string {
 	return fmt.Sprintf("ALTER TABLE %s RENAME TO %s", old, new)
 }
@@ -142,4 +146,11 @@ func (d *PostgresDialect) CreateIndexSQL(table, name string, columns []string, u
 
 func (d *PostgresDialect) DropIndexSQL(table, name string) string {
 	return fmt.Sprintf("DROP INDEX %s", name)
+}
+
+func (d *PostgresDialect) CreateCompositePrimarySQL(columns ...string) string {
+	return fmt.Sprintf(
+		"PRIMARY KEY (%s)",
+		strings.Join(columns, ", "),
+	)
 }

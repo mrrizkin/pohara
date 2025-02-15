@@ -93,7 +93,7 @@ func (d *MySqlDialect) CreateTableSQL(table string, columns []string) string {
 
 func (d *MySqlDialect) CreateTableIfNotExistSQL(table string, columns []string) string {
 	return fmt.Sprintf(
-		"CREATE TABLE IF NOT EXIST %s (\n  %s\n)",
+		"CREATE TABLE IF NOT EXISTS %s (\n  %s\n)",
 		table,
 		strings.Join(columns, ",\n  "),
 	)
@@ -119,6 +119,10 @@ func (d *MySqlDialect) DropTableSQL(table string) string {
 	return fmt.Sprintf("DROP TABLE %s", table)
 }
 
+func (d *MySqlDialect) DropTableIfExistSQL(table string) string {
+	return fmt.Sprintf("DROP TABLE IF EXISTS %s", table)
+}
+
 func (d *MySqlDialect) RenameTableSQL(old, new string) string {
 	return fmt.Sprintf("RENAME TABLE %s TO %s", old, new)
 }
@@ -139,4 +143,11 @@ func (d *MySqlDialect) CreateIndexSQL(table, name string, columns []string, uniq
 
 func (d *MySqlDialect) DropIndexSQL(table, name string) string {
 	return fmt.Sprintf("DROP INDEX %s ON %s", name, table)
+}
+
+func (d *MySqlDialect) CreateCompositePrimarySQL(columns ...string) string {
+	return fmt.Sprintf(
+		"PRIMARY KEY (%s)",
+		strings.Join(columns, ", "),
+	)
 }

@@ -11,16 +11,16 @@ func (m *CreateMUserTable) ID() string {
 }
 
 func (m *CreateMUserTable) Up(schema *migration.Schema) {
-	schema.Create("m_user", func(table *migration.Blueprint) {
+	schema.CreateNotExist("m_user", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("name")
-		table.Text("username").Unique()
+		table.Text("username").Unique().Index("idx_username")
 		table.Text("password")
-		table.Text("email").Unique()
+		table.Text("email").Unique().Index("idx_email")
 		table.Timestamps()
 	})
 }
 
 func (m *CreateMUserTable) Down(schema *migration.Schema) {
-	schema.Drop("m_user")
+	schema.DropExist("m_user")
 }

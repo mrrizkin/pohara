@@ -36,9 +36,11 @@ type Dialect interface {
 	RenameColumnSQL(table, old, new string) string
 	DropColumnSQL(table, column string) string
 	DropTableSQL(table string) string
+	DropTableIfExistSQL(table string) string
 	RenameTableSQL(old, new string) string
 	CreateIndexSQL(table, name string, columns []string, unique bool) string
 	DropIndexSQL(table, name string) string
+	CreateCompositePrimarySQL(columns ...string) string
 }
 
 // Column definition
@@ -53,19 +55,28 @@ type Column struct {
 	Length    int
 	Precision int
 	Scale     int
+	Index     string
 	IsPrimary bool
+	Foreign   Foreign
+}
+
+type Foreign struct {
+	Table    string
+	Column   string
+	OnDelete string
 }
 
 // Blueprint for table definition
 type Blueprint struct {
-	TableName  string
-	Columns    []Column
-	Indexes    []index
-	Renames    []rename
-	Drops      []string
-	Modifies   []Column
-	IsCreating bool
-	dialect    Dialect
+	TableName        string
+	Columns          []Column
+	Indexes          []index
+	Renames          []rename
+	Drops            []string
+	Modifies         []Column
+	CompositePrimary []string
+	IsCreating       bool
+	dialect          Dialect
 }
 
 type index struct {
@@ -107,9 +118,16 @@ func (s *Schema) Create(table string, callback func(*Blueprint)) {
 			s.dialect.CreateIndexSQL(table, idx.Name, idx.Columns, idx.Unique),
 		)
 	}
+
+	if len(bp.CompositePrimary) > 0 {
+		s.statements = append(
+			s.statements,
+			s.dialect.CreateCompositePrimarySQL(bp.CompositePrimary...),
+		)
+	}
 }
 
-func (s *Schema) CreateIfNotExist(table string, callback func(*Blueprint)) {
+func (s *Schema) CreateNotExist(table string, callback func(*Blueprint)) {
 	bp := &Blueprint{TableName: table, IsCreating: true, dialect: s.dialect}
 	callback(bp)
 
@@ -144,6 +162,14 @@ func (s *Schema) Table(table string, callback func(*Blueprint)) {
 	for _, col := range bp.Columns {
 		sql := s.dialect.AddColumnSQL(table, s.buildColumn(col))
 		s.statements = append(s.statements, sql)
+
+		if col.Index != "" {
+			bp.Indexes = append(bp.Indexes, index{
+				Name:    col.Index,
+				Columns: []string{col.Name},
+				Unique:  col.Unique,
+			})
+		}
 	}
 
 	// Handle renames
@@ -169,6 +195,10 @@ func (s *Schema) Table(table string, callback func(*Blueprint)) {
 // Drop table
 func (s *Schema) Drop(table string) {
 	s.statements = append(s.statements, s.dialect.DropTableSQL(table))
+}
+
+func (s *Schema) DropExist(table string) {
+	s.statements = append(s.statements, s.dialect.DropTableIfExistSQL(table))
 }
 
 // Rename table
@@ -199,6 +229,13 @@ func (s *Schema) buildColumn(col Column) string {
 		parts = append(parts, "AFTER", col.After)
 	}
 
+	if col.Foreign.Table != "" && col.Foreign.Column != "" {
+		parts = append(parts, "REFERENCES "+col.Foreign.Table+"("+col.Foreign.Column+")")
+		if col.Foreign.OnDelete != "" {
+			parts = append(parts, "ON DELETE "+col.Foreign.OnDelete)
+		}
+	}
+
 	return strings.Join(parts, " ")
 }
 
@@ -218,6 +255,18 @@ func (b *Blueprint) ID() {
 		IsPrimary: true,
 	}
 	b.Columns = append(b.Columns, col)
+}
+
+func (b *Blueprint) Primary(columns ...string) {
+	b.CompositePrimary = append(b.CompositePrimary, columns...)
+}
+
+func (b *Blueprint) Index(name string, unique bool, columns ...string) {
+	b.Indexes = append(b.Indexes, index{
+		Name:    name,
+		Unique:  unique,
+		Columns: columns,
+	})
 }
 
 func (b *Blueprint) String(name string, length int) *ColumnBuilder {
@@ -348,5 +397,21 @@ func (cb *ColumnBuilder) Unique() *ColumnBuilder {
 
 func (cb *ColumnBuilder) After(column string) *ColumnBuilder {
 	cb.col.After = column
+	return cb
+}
+
+func (cb *ColumnBuilder) Index(column string) *ColumnBuilder {
+	cb.col.Index = column
+	return cb
+}
+
+func (cb *ColumnBuilder) Foreign(table, column string) *ColumnBuilder {
+	cb.col.Foreign.Table = table
+	cb.col.Foreign.Column = column
+	return cb
+}
+
+func (cb *ColumnBuilder) OnDelete(action string) *ColumnBuilder {
+	cb.col.Foreign.OnDelete = action
 	return cb
 }

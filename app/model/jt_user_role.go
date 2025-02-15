@@ -1,9 +1,8 @@
 package model
 
 type JtUserRole struct {
-	ID     uint `json:"id"      gorm:"primaryKey"`
-	UserID uint `json:"user_id"`
-	RoleID uint `json:"role_id"`
+	UserID uint `json:"user_id" gorm:"primaryKey"`
+	RoleID uint `json:"role_id" gorm:"primaryKey"`
 }
 
 func (JtUserRole) TableName() string {

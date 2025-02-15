@@ -11,13 +11,13 @@ func (m *CreateJtUserRoleTable) ID() string {
 }
 
 func (m *CreateJtUserRoleTable) Up(schema *migration.Schema) {
-	schema.Create("jt_user_role", func(table *migration.Blueprint) {
-		table.ID()
-		table.BigInteger("user_id")
-		table.BigInteger("role_id")
+	schema.CreateNotExist("jt_user_role", func(table *migration.Blueprint) {
+		table.BigInteger("user_id").Index("idx_user_id").Foreign("m_user", "id").OnDelete("CASCADE")
+		table.BigInteger("role_id").Index("idx_role_id").Foreign("m_role", "id").OnDelete("CASCADE")
+		table.Primary("user_id", "role_id")
 	})
 }
 
 func (m *CreateJtUserRoleTable) Down(schema *migration.Schema) {
-	schema.Drop("jt_user_role")
+	schema.DropExist("jt_user_role")
 }

@@ -92,7 +92,7 @@ func (d *SQLiteDialect) CreateTableSQL(table string, columns []string) string {
 
 func (d *SQLiteDialect) CreateTableIfNotExistSQL(table string, columns []string) string {
 	return fmt.Sprintf(
-		"CREATE TABLE IF NOT EXIST %s (\n  %s\n)",
+		"CREATE TABLE IF NOT EXISTS %s (\n  %s\n)",
 		table,
 		strings.Join(columns, ",\n  "),
 	)
@@ -121,6 +121,10 @@ func (d *SQLiteDialect) DropTableSQL(table string) string {
 	return fmt.Sprintf("DROP TABLE %s", table)
 }
 
+func (d *SQLiteDialect) DropTableIfExistSQL(table string) string {
+	return fmt.Sprintf("DROP TABLE IF EXISTS %s", table)
+}
+
 func (d *SQLiteDialect) RenameTableSQL(old, new string) string {
 	return fmt.Sprintf("ALTER TABLE %s RENAME TO %s", old, new)
 }
@@ -141,4 +145,11 @@ func (d *SQLiteDialect) CreateIndexSQL(table, name string, columns []string, uni
 
 func (d *SQLiteDialect) DropIndexSQL(table, name string) string {
 	return fmt.Sprintf("DROP INDEX %s", name)
+}
+
+func (d *SQLiteDialect) CreateCompositePrimarySQL(columns ...string) string {
+	return fmt.Sprintf(
+		"PRIMARY KEY (%s)",
+		strings.Join(columns, ", "),
+	)
 }

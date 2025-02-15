@@ -1,9 +1,8 @@
 package model
 
 type JtRolePolicy struct {
-	ID       uint `json:"id"        gorm:"primaryKey"`
-	RoleID   uint `json:"role_id"`
-	PolicyID uint `json:"policy_id"`
+	RoleID   uint `json:"role_id" gorm:"primaryKey"`
+	PolicyID uint `json:"policy_id" gorm:"primaryKey"`
 }
 
 func (JtRolePolicy) TableName() string {

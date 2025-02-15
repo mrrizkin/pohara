@@ -9,17 +9,17 @@ func (m *CreateCfgPolicyTable) ID() string {
 }
 
 func (m *CreateCfgPolicyTable) Up(schema *migration.Schema) {
-	schema.Create("cfg_policy", func(table *migration.Blueprint) {
+	schema.CreateNotExist("cfg_policy", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("name")
 		table.Text("condition").Nullable()
 		table.Text("action")
 		table.Text("effect")
-		table.Text("resource")
+		table.Text("resource").Nullable()
 		table.Timestamps()
 	})
 }
 
 func (m *CreateCfgPolicyTable) Down(schema *migration.Schema) {
-	schema.Drop("cfg_policy")
+	schema.DropExist("cfg_policy")
 }
