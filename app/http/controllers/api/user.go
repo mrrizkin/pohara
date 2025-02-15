@@ -154,7 +154,10 @@ func (c *UserController) UserFind(ctx *fiber.Ctx) error {
 		search.String = searchQ
 	}
 
-	result, err := c.userRepo.Find(search, sql.Int64(page), sql.Int64(limit))
+	result, err := c.userRepo.Find(search, repository.QueryPaginateParams{
+		Page:  sql.Int64(page),
+		Limit: sql.Int64(limit),
+	})
 	if err != nil {
 		cause := "error find users"
 		c.log.Error(cause, "error", err)

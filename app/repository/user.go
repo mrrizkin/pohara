@@ -1,10 +1,7 @@
 package repository
 
 import (
-	"math"
-
 	"go.uber.org/fx"
-	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
@@ -96,52 +93,14 @@ func (r *UserRepository) Create(user *model.MUser) error {
 
 func (r *UserRepository) Find(
 	search sql.StringNullable,
-	page, limit sql.Int64Nullable,
-) (result *sql.PaginationResult, err error) {
+	paginateParams QueryPaginateParams,
+) (*PaginationResult[model.MUser], error) {
 	var users []model.MUser
-	var total int64
-
 	query := r.db.Model(&users)
-	err = query.Session(&gorm.Session{NewDB: true}).Count(&total).Error
-	if err != nil {
-		return
+	if search.Valid {
+		query.Where("name ILIKE ?", "%"+search.String+"%")
 	}
-
-	if limit.Valid {
-		query.Limit(int(limit.Int64))
-	}
-
-	offset := sql.Int64Null()
-	if page.Valid && page.Int64 != 0 {
-		offset.Valid = true
-		offset.Int64 = (page.Int64 - 1)
-		if limit.Int64 != 0 {
-			offset.Int64 = page.Int64 * limit.Int64
-		}
-
-		query.Offset(int(offset.Int64))
-	}
-
-	err = query.Find(&users).Error
-	if err != nil {
-		return
-	}
-
-	totalPage := sql.Int64Null()
-	if offset.Valid && limit.Valid && limit.Int64 != 0 {
-		totalPage.Valid = true
-		totalPage.Int64 = int64(math.Ceil(float64(total)/float64(limit.Int64))) + 1
-	}
-
-	result = &sql.PaginationResult{
-		Data:      users,
-		Total:     total,
-		TotalPage: totalPage,
-		Page:      page,
-		Limit:     limit,
-	}
-
-	return
+	return QueryPaginate(query, users, paginateParams)
 }
 
 func (r *UserRepository) FindByID(id uint) (*model.MUser, error) {
