@@ -19,7 +19,10 @@ func NewSimpleFlashProvider() *SimpleFlashProvider {
 	}
 }
 
-func (f *SimpleFlashProvider) FlashErrors(ctx context.Context, errors gonertia.ValidationErrors) error {
+func (f *SimpleFlashProvider) FlashErrors(
+	ctx context.Context,
+	errors gonertia.ValidationErrors,
+) error {
 	sessionID := f.getSessionIDFromContext(ctx)
 	f.errors[sessionID] = errors
 	return nil

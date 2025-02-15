@@ -58,7 +58,10 @@ func (a *AuthRepository) DeleteMRole(id uint) error {
 	return nil
 }
 
-func (a *AuthRepository) ReconcilRoleToPolicy(role *model.MRole, policies ...model.CfgPolicy) error {
+func (a *AuthRepository) ReconcilRoleToPolicy(
+	role *model.MRole,
+	policies ...model.CfgPolicy,
+) error {
 	return a.db.Transaction(func(tx *gorm.DB) error {
 		// Step 1: Batch insert new role-policy assignments (skip if already exists)
 		var jtRolePolicies []model.JtRolePolicy

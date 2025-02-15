@@ -75,7 +75,10 @@ func (a *AuthRepository) AssignUserToRole(user *model.MUser, roles ...model.MRol
 	}
 
 	// Perform batch insertion
-	result := a.db.CreateInBatches(jtUserRoles, len(jtUserRoles)) // Batch size = total number of policies
+	result := a.db.CreateInBatches(
+		jtUserRoles,
+		len(jtUserRoles),
+	) // Batch size = total number of policies
 	if result.Error != nil {
 		return result.Error
 	}
@@ -170,7 +173,10 @@ func (a *AuthRepository) getUserRoles(userID uint, preload bool) ([]model.MRole,
 	return roles, err
 }
 
-func (a *AuthRepository) getUserContextCache(ctx context.Context, userID uint) (*UserContext, bool) {
+func (a *AuthRepository) getUserContextCache(
+	ctx context.Context,
+	userID uint,
+) (*UserContext, bool) {
 	val, found := a.cache.Get(ctx, a.getUserContextCacheKey(userID))
 	if !found {
 		return nil, false
@@ -182,7 +188,11 @@ func (a *AuthRepository) getUserContextCache(ctx context.Context, userID uint) (
 	return userContext, true
 }
 
-func (a *AuthRepository) createUserContextCache(ctx context.Context, userID uint, value *UserContext) error {
+func (a *AuthRepository) createUserContextCache(
+	ctx context.Context,
+	userID uint,
+	value *UserContext,
+) error {
 	return a.cache.Set(ctx, a.getUserContextCacheKey(userID), value)
 }
 
