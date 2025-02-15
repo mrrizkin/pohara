@@ -28,7 +28,11 @@ type QueryPaginateParams struct {
 	Limit sql.Int64Nullable
 }
 
-func QueryPaginate[T any](db *gorm.DB, m []T, params QueryPaginateParams) (result *PaginationResult[T], err error) {
+func QueryPaginate[T any](
+	db *gorm.DB,
+	m []T,
+	params QueryPaginateParams,
+) (result *PaginationResult[T], err error) {
 	var total int64
 	err = db.Session(&gorm.Session{NewDB: true}).Count(&total).Error
 	if err != nil {
