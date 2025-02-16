@@ -7,6 +7,8 @@ import "@/assets/css/admin/index.css";
 
 import { Loading } from "@/components/loading";
 
+import ErrorBoundary from "./pages/error/boundary";
+
 const intervalMS = 60 * 60 * 1000;
 registerSW({
 	onRegistered(r) {
@@ -25,9 +27,11 @@ createInertiaApp({
 	},
 	setup({ el, App, props }) {
 		createRoot(el).render(
-			<Suspense fallback={<Loading />}>
-				<App {...props} />
-			</Suspense>,
+			<ErrorBoundary>
+				<Suspense fallback={<Loading />}>
+					<App {...props} />
+				</Suspense>
+			</ErrorBoundary>,
 		);
 	},
 });
