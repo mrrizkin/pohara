@@ -180,43 +180,43 @@ export const sidebarData: SidebarData = {
 					items: [
 						{
 							title: "Branding",
-							url: "/_/system/branding",
+							url: "/_/system/setting/branding",
 							icon: Paintbrush,
 						},
 						{
 							title: "Integrations",
-							url: "/_/system/integrations",
+							url: "/_/system/setting/integrations",
 							icon: Package,
 							permissions: ["view::page-integration"],
 						},
 						{
 							title: "General",
-							url: "/_/system/general",
+							url: "/_/system/setting/general",
 							icon: Wrench,
 						},
 						{
 							title: "Security",
-							url: "/_/system/security",
+							url: "/_/system/setting/security",
 							icon: Lock,
 						},
 						{
 							title: "Localization",
-							url: "/_/system/localization",
+							url: "/_/system/setting/localization",
 							icon: Earth,
 						},
 						{
 							title: "Notifications",
-							url: "/_/system/notification",
+							url: "/_/system/setting/notification",
 							icon: Bell,
 						},
 						{
 							title: "Backups",
-							url: "/_/system/backup",
+							url: "/_/system/setting/backup",
 							icon: FileArchive,
 						},
 						{
 							title: "Purge",
-							url: "/_/system/purge",
+							url: "/_/system/setting/purge",
 							icon: Trash,
 						},
 					],

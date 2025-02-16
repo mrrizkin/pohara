@@ -2,16 +2,23 @@ package admin
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/romsar/gonertia"
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/action"
+	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/modules/common/sql"
+	"github.com/mrrizkin/pohara/modules/core/logger"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
 )
 
 type UserController struct {
 	inertia *inertia.Inertia
 	auth    *service.AuthService
+	log     *logger.ZeroLog
+
+	userRepo *repository.UserRepository
 }
 
 type UserControllerDependencies struct {
@@ -19,12 +26,17 @@ type UserControllerDependencies struct {
 
 	Inertia *inertia.Inertia
 	Auth    *service.AuthService
+	Logger  *logger.ZeroLog
+
+	UserRepository *repository.UserRepository
 }
 
 func NewUserController(deps UserControllerDependencies) *UserController {
 	return &UserController{
-		inertia: deps.Inertia,
-		auth:    deps.Auth,
+		inertia:  deps.Inertia,
+		auth:     deps.Auth,
+		log:      deps.Logger.Scope("admin_user_controller"),
+		userRepo: deps.UserRepository,
 	}
 }
 
@@ -33,5 +45,25 @@ func (c *UserController) Index(ctx *fiber.Ctx) error {
 		return c.inertia.Render(ctx.Status(403), "error/forbidden")
 	}
 
-	return c.inertia.Render(ctx, "users/index")
+	page := int64(ctx.QueryInt("page", 1))
+	limit := int64(ctx.QueryInt("limit", 10))
+	searchQ := ctx.Query("q", "")
+
+	search := sql.StringNull()
+	if searchQ != "" {
+		search.Valid = true
+		search.String = searchQ
+	}
+
+	result, err := c.userRepo.Find(search, repository.QueryPaginateParams{
+		Page:  sql.Int64(page),
+		Limit: sql.Int64(limit),
+	})
+	if err != nil {
+		c.log.Error("error get list user", "error", err)
+	}
+
+	return c.inertia.Render(ctx, "users/index", gonertia.Props{
+		"users": result,
+	})
 }

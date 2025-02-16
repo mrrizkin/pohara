@@ -9,10 +9,10 @@ import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { DataTableRowActions, DropdownButtons } from "@/components/data-table/row-actions";
 import LongText from "@/components/long-text";
 
-import { useUsers } from "../context/users-context";
-import { User } from "../data/schema";
+import { useRoles } from "../context/roles-context";
+import { Role } from "../data/schema";
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Role>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (
@@ -38,7 +38,7 @@ export const columns: ColumnDef<User>[] = [
 	{
 		accessorKey: "name",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-		cell: ({ row }) => <div className="w-fit text-nowrap">{row.getValue("name")}</div>,
+		cell: ({ row }) => <LongText className="max-w-36">{row.getValue("name")}</LongText>,
 		meta: {
 			className: cn(
 				"drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none",
@@ -49,15 +49,9 @@ export const columns: ColumnDef<User>[] = [
 		enableHiding: false,
 	},
 	{
-		accessorKey: "username",
-		header: ({ column }) => <DataTableColumnHeader column={column} title="Username" />,
-		cell: ({ row }) => <LongText className="max-w-36">{row.getValue("username")}</LongText>,
-		meta: { className: "w-36" },
-	},
-	{
-		accessorKey: "email",
-		header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-		cell: ({ row }) => <div className="w-fit text-nowrap">{row.getValue("email")}</div>,
+		accessorKey: "description",
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
+		cell: ({ row }) => <div className="w-fit text-nowrap">{row.getValue("description")}</div>,
 	},
 	{
 		id: "actions",
@@ -65,8 +59,8 @@ export const columns: ColumnDef<User>[] = [
 	},
 ];
 
-function Action({ row }: { row: Row<User> }) {
-	const { setOpen, setCurrentRow } = useUsers();
+function Action({ row }: { row: Row<Role> }) {
+	const { setOpen, setCurrentRow } = useRoles();
 
 	let buttons: DropdownButtons[] = [
 		{

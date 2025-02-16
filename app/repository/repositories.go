@@ -12,15 +12,16 @@ var Module = fx.Module("repository",
 	fx.Provide(
 		NewUserRepository,
 		NewSettingRepository,
+		NewRoleRepository,
 	),
 )
 
 type PaginationResult[T any] struct {
-	Data      []T
-	Total     int64
-	TotalPage sql.Int64Nullable
-	Page      sql.Int64Nullable
-	Limit     sql.Int64Nullable
+	Data      []T               `json:"data"`
+	Total     int64             `json:"total"`
+	TotalPage sql.Int64Nullable `json:"total_page"`
+	Page      sql.Int64Nullable `json:"page"`
+	Limit     sql.Int64Nullable `json:"limit"`
 }
 
 type QueryPaginateParams struct {
@@ -34,7 +35,7 @@ func QueryPaginate[T any](
 	params QueryPaginateParams,
 ) (result *PaginationResult[T], err error) {
 	var total int64
-	err = db.Session(&gorm.Session{NewDB: true}).Count(&total).Error
+	err = db.Count(&total).Error
 	if err != nil {
 		return
 	}
@@ -48,7 +49,7 @@ func QueryPaginate[T any](
 		offset.Valid = true
 		offset.Int64 = (params.Page.Int64 - 1)
 		if params.Limit.Int64 != 0 {
-			offset.Int64 = params.Page.Int64 * params.Limit.Int64
+			offset.Int64 = offset.Int64 * params.Limit.Int64
 		}
 
 		db.Offset(int(offset.Int64))

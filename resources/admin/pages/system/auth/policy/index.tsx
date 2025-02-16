@@ -1,7 +1,5 @@
 import { Head } from "@inertiajs/react";
 
-import { PaginationResult } from "@/types/pagination";
-
 import { AuthenticatedLayout } from "@/components/layout/authenticated";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -15,19 +13,16 @@ import { UsersDialogs } from "./components/users-dialogs";
 import { UsersPrimaryButtons } from "./components/users-primary-buttons";
 import { UsersTable } from "./components/users-table";
 import UsersProvider from "./context/users-context";
-import { User, userListSchema } from "./data/schema";
+import { userListSchema } from "./data/schema";
+import { users } from "./data/users";
 
-interface Props {
-	users: PaginationResult<User>;
-}
-
-export default function Users(props: Props) {
-	// Parse user list
-	const userList = userListSchema.parse(props.users.data);
+export default function Policies() {
+	// Parse policy list
+	const userList = userListSchema.parse(users);
 
 	return (
 		<AuthenticatedLayout>
-			<Head title="Manage User" />
+			<Head title="Manage Policy" />
 			<UsersProvider>
 				<Header fixed>
 					<Search />
@@ -40,8 +35,8 @@ export default function Users(props: Props) {
 				<Main>
 					<div className="mb-2 flex flex-wrap items-center justify-between space-y-2">
 						<div>
-							<h2 className="text-2xl font-bold tracking-tight">User List</h2>
-							<p className="text-muted-foreground">Manage your users and their roles here.</p>
+							<h2 className="text-2xl font-bold tracking-tight">Policy List</h2>
+							<p className="text-muted-foreground">Manage your policy here.</p>
 						</div>
 						<UsersPrimaryButtons />
 					</div>

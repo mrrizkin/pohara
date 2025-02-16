@@ -76,8 +76,8 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
 										}}>
 										<div
 											className={cn(
-												"border-primary flex h-4 w-4 items-center justify-center rounded-sm border",
-												isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible",
+												"flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+												isSelected ? "text-primary-foreground bg-primary" : "opacity-50 [&_svg]:invisible",
 											)}>
 											<Check className={cn("h-4 w-4")} />
 										</div>

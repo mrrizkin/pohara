@@ -9,23 +9,23 @@ import { Label } from "@/components/ui/label";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
-import { User } from "../data/schema";
+import { Role } from "../data/schema";
 
 interface Props {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	currentRow: User;
+	currentRow: Role;
 }
 
-export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
+export function RolesDeleteDialog({ open, onOpenChange, currentRow }: Props) {
 	const [value, setValue] = useState("");
 
 	const handleDelete = () => {
-		if (value.trim() !== currentRow.username) return;
+		if (value.trim() !== currentRow.name) return;
 
 		onOpenChange(false);
 		toast({
-			title: "The following user has been deleted:",
+			title: "The following role has been deleted:",
 			description: (
 				<pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
 					<code className="text-white">{JSON.stringify(currentRow, null, 2)}</code>
@@ -39,23 +39,23 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
 			open={open}
 			onOpenChange={onOpenChange}
 			handleConfirm={handleDelete}
-			disabled={value.trim() !== currentRow.username}
+			disabled={value.trim() !== currentRow.name}
 			title={
 				<span className="text-destructive">
-					<AlertTriangle className="stroke-destructive mr-1 inline-block" size={18} /> Delete User
+					<AlertTriangle className="stroke-destructive mr-1 inline-block" size={18} /> Delete Role
 				</span>
 			}
 			desc={
 				<div className="space-y-4">
 					<p className="mb-2">
-						Are you sure you want to delete <span className="font-bold">{currentRow.username}</span>?
+						Are you sure you want to delete <span className="font-bold">{currentRow.name}</span>?
 						<br />
-						This action will permanently remove the user from the system. This cannot be undone.
+						This action will permanently remove the role from the system. This cannot be undone.
 					</p>
 
 					<Label className="my-2">
-						Username:
-						<Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Enter username to confirm deletion." />
+						Role:
+						<Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Enter name to confirm deletion." />
 					</Label>
 
 					<Alert variant="destructive">

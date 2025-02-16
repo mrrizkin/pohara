@@ -26,7 +26,7 @@ func NewMenuMiddleware(deps MenuMiddlewareDependencies) *MenuMiddleware {
 
 func (m *MenuMiddleware) AuthorizeMenu(ctx *fiber.Ctx) error {
 	m.inertia.AuthorizedMenu(ctx, []access.Action{
-		action.PageIntegration,
+		action.PageUser,
 
 		action.PageSettingProfile,
 		action.PageSettingAccount,
@@ -34,7 +34,17 @@ func (m *MenuMiddleware) AuthorizeMenu(ctx *fiber.Ctx) error {
 		action.PageSettingNotification,
 		action.PageSettingDisplay,
 
-		action.PageUser,
+		action.PageSystemSettingBranding,
+		action.PageSystemSettingIntegration,
+		action.PageSystemSettingGeneral,
+		action.PageSystemSettingSecurity,
+		action.PageSystemSettingLocalization,
+		action.PageSystemSettingNotification,
+		action.PageSystemSettingBackup,
+		action.PageSystemSettingPurge,
+
+		action.PageSystemAuthRole,
+		action.PageSystemAuthPolicy,
 	})
 
 	return ctx.Next()

@@ -11,15 +11,20 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { PasswordInput } from "@/components/password-input";
+import { SelectDropdown } from "@/components/select-dropdown";
 
+import { userTypes } from "../data/data";
 import { User } from "../data/schema";
 
 const formSchema = z
 	.object({
-		name: z.string().min(1, { message: "Name is required." }),
+		firstName: z.string().min(1, { message: "First Name is required." }),
+		lastName: z.string().min(1, { message: "Last Name is required." }),
 		username: z.string().min(1, { message: "Username is required." }),
-		email: z.string().min(1, { message: "Email is required." }).email({ message: "Email is invalid." }).optional(),
+		phoneNumber: z.string().min(1, { message: "Phone number is required." }),
+		email: z.string().min(1, { message: "Email is required." }).email({ message: "Email is invalid." }),
 		password: z.string().transform((pwd) => pwd.trim()),
+		role: z.string().min(1, { message: "Role is required." }),
 		confirmPassword: z.string().transform((pwd) => pwd.trim()),
 		isEdit: z.boolean(),
 	})
@@ -86,9 +91,12 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
 					isEdit,
 				}
 			: {
-					name: "",
+					firstName: "",
+					lastName: "",
 					username: "",
 					email: "",
+					role: "",
+					phoneNumber: "",
 					password: "",
 					confirmPassword: "",
 					isEdit,
@@ -130,12 +138,25 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
 						<form id="user-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-0.5">
 							<FormField
 								control={form.control}
-								name="name"
+								name="firstName"
 								render={({ field }) => (
 									<FormItem className="grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0">
-										<FormLabel className="col-span-2 text-right">Name</FormLabel>
+										<FormLabel className="col-span-2 text-right">First Name</FormLabel>
 										<FormControl>
 											<Input placeholder="John" className="col-span-4" autoComplete="off" {...field} />
+										</FormControl>
+										<FormMessage className="col-span-4 col-start-3" />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="lastName"
+								render={({ field }) => (
+									<FormItem className="grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0">
+										<FormLabel className="col-span-2 text-right">Last Name</FormLabel>
+										<FormControl>
+											<Input placeholder="Doe" className="col-span-4" autoComplete="off" {...field} />
 										</FormControl>
 										<FormMessage className="col-span-4 col-start-3" />
 									</FormItem>
@@ -163,6 +184,39 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
 										<FormControl>
 											<Input placeholder="john.doe@gmail.com" className="col-span-4" {...field} />
 										</FormControl>
+										<FormMessage className="col-span-4 col-start-3" />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="phoneNumber"
+								render={({ field }) => (
+									<FormItem className="grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0">
+										<FormLabel className="col-span-2 text-right">Phone Number</FormLabel>
+										<FormControl>
+											<Input placeholder="+123456789" className="col-span-4" {...field} />
+										</FormControl>
+										<FormMessage className="col-span-4 col-start-3" />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="role"
+								render={({ field }) => (
+									<FormItem className="grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0">
+										<FormLabel className="col-span-2 text-right">Role</FormLabel>
+										<SelectDropdown
+											defaultValue={field.value}
+											onValueChange={field.onChange}
+											placeholder="Select a role"
+											className="col-span-4"
+											items={userTypes.map(({ label, value }) => ({
+												label,
+												value,
+											}))}
+										/>
 										<FormMessage className="col-span-4 col-start-3" />
 									</FormItem>
 								)}

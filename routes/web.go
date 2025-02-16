@@ -6,6 +6,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/http/controllers"
 	"github.com/mrrizkin/pohara/app/http/controllers/admin"
+	"github.com/mrrizkin/pohara/app/http/controllers/admin/setting/system"
 	"github.com/mrrizkin/pohara/app/http/middleware"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
 	"github.com/mrrizkin/pohara/modules/server"
@@ -19,10 +20,11 @@ type WebRouterDependencies struct {
 	AuthMiddleware *middleware.AuthMiddleware
 	MenuMiddleware *middleware.MenuMiddleware
 
-	Dashboard   *admin.DashboardController
-	Setting     *admin.SettingController
-	User        *admin.UserController
-	Integration *admin.IntegrationController
+	Dashboard         *admin.DashboardController
+	Setting           *admin.SettingController
+	User              *admin.UserController
+	SystemSetting     *system.SystemSettingController
+	SettingSystemAuth *system.AuthController
 
 	Setup *controllers.SetupController
 
@@ -61,15 +63,27 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 		user := authenticated.Group("/users").Name("user.")
 		user.Get("/", deps.User.Index).Name("index")
 
-		integration := authenticated.Group("/integrations").Name("integration.")
-		integration.Get("/", deps.Integration.Index).Name("index")
-
 		setting := authenticated.Group("/settings").Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")
 		setting.Get("/account", deps.Setting.AccountPage).Name("account")
 		setting.Get("/appearance", deps.Setting.AppearancePage).Name("appearance")
 		setting.Get("/notifications", deps.Setting.NotificationPage).Name("notifications")
 		setting.Get("/display", deps.Setting.DisplayPage).Name("display")
+
+		system := authenticated.Group("/system").Name("system.")
+		systemSetting := system.Group("/setting").Name("setting.")
+		systemSetting.Get("/branding", deps.SystemSetting.Branding).Name("branding")
+		systemSetting.Get("/integrations", deps.SystemSetting.Integration).Name("integration")
+		systemSetting.Get("/general", deps.SystemSetting.General).Name("general")
+		systemSetting.Get("/security", deps.SystemSetting.Security).Name("security")
+		systemSetting.Get("/localization", deps.SystemSetting.Localization).Name("localization")
+		systemSetting.Get("/notification", deps.SystemSetting.Notification).Name("notification")
+		systemSetting.Get("/backup", deps.SystemSetting.Backup).Name("backup")
+		systemSetting.Get("/purge", deps.SystemSetting.Purge).Name("purge")
+
+		authSetting := system.Group("/auth").Name("auth.")
+		authSetting.Get("/role", deps.SettingSystemAuth.Role).Name("role")
+		authSetting.Get("/policy", deps.SettingSystemAuth.Policy).Name("policy")
 
 		r.Get("/_/*", func(ctx *fiber.Ctx) error {
 			return deps.Inertia.Render(ctx.Status(fiber.StatusNotFound), "error/not-found")

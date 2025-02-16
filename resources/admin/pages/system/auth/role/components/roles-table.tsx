@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { DataTablePagination } from "@/components/data-table/pagination";
 
-import { User } from "../data/schema";
+import { Role } from "../data/schema";
 import { DataTableToolbar } from "./data-table-toolbar";
 
 declare module "@tanstack/react-table" {
@@ -30,11 +30,11 @@ declare module "@tanstack/react-table" {
 }
 
 interface DataTableProps {
-	columns: ColumnDef<User>[];
-	data: User[];
+	columns: ColumnDef<Role>[];
+	data: Role[];
 }
 
-export function UsersTable({ columns, data }: DataTableProps) {
+export function RolesTable({ columns, data }: DataTableProps) {
 	const [rowSelection, setRowSelection] = useState({});
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);

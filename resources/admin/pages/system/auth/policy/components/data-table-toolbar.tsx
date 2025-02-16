@@ -4,7 +4,10 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { DataTableFacetedFilter } from "@/components/data-table/faceted-filter";
 import { DataTableViewOptions } from "@/components/data-table/view-options";
+
+import { userTypes } from "../data/data";
 
 interface DataTableToolbarProps<TData> {
 	table: Table<TData>;
@@ -22,6 +25,21 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
 					onChange={(event) => table.getColumn("username")?.setFilterValue(event.target.value)}
 					className="h-8 w-[150px] lg:w-[250px]"
 				/>
+				<div className="flex gap-x-2">
+					{table.getColumn("status") && (
+						<DataTableFacetedFilter
+							column={table.getColumn("status")}
+							title="Status"
+							options={[
+								{ label: "Active", value: "active" },
+								{ label: "Inactive", value: "inactive" },
+								{ label: "Invited", value: "invited" },
+								{ label: "Suspended", value: "suspended" },
+							]}
+						/>
+					)}
+					{table.getColumn("role") && <DataTableFacetedFilter column={table.getColumn("role")} title="Role" options={userTypes.map((t) => ({ ...t }))} />}
+				</div>
 				{isFiltered && (
 					<Button variant="ghost" onClick={() => table.resetColumnFilters()} className="h-8 px-2 lg:px-3">
 						Reset
