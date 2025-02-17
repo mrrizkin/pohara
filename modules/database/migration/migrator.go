@@ -193,13 +193,13 @@ func (m *Migrator) Status() error {
 		executedMigrations[h.ID] = h
 	}
 
-	maxMigrationLen, maxBatchLen, maxExecutedLen := m.calculateColumnWidths(histories, executedMigrations)
+	maxMigrationLen, maxBatchLen, maxExecutedLen := m.calculateColumnWidths(histories)
 	m.printMigrationStatusTable(executedMigrations, maxMigrationLen, maxBatchLen, maxExecutedLen)
 
 	return nil
 }
 
-func (m *Migrator) calculateColumnWidths(histories []model.MigrationHistory, executedMigrations map[string]model.MigrationHistory) (int, int, int) {
+func (m *Migrator) calculateColumnWidths(histories []model.MigrationHistory) (int, int, int) {
 	maxMigrationLen := len("Migration")
 	maxBatchLen := len("Batch")
 	maxExecutedLen := len("Executed At")
