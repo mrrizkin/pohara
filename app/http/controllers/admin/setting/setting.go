@@ -1,4 +1,4 @@
-package admin
+package setting
 
 import (
 	"github.com/gofiber/fiber/v2"

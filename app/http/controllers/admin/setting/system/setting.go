@@ -21,7 +21,7 @@ type SystemSettingControllerDependencies struct {
 	Auth    *service.AuthService
 }
 
-func NewSettingController(deps SystemSettingControllerDependencies) *SystemSettingController {
+func NewSystemSettingController(deps SystemSettingControllerDependencies) *SystemSettingController {
 	return &SystemSettingController{
 		inertia: deps.Inertia,
 		auth:    deps.Auth,

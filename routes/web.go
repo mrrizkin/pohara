@@ -6,6 +6,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/http/controllers"
 	"github.com/mrrizkin/pohara/app/http/controllers/admin"
+	"github.com/mrrizkin/pohara/app/http/controllers/admin/setting"
 	"github.com/mrrizkin/pohara/app/http/controllers/admin/setting/system"
 	"github.com/mrrizkin/pohara/app/http/middleware"
 	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
@@ -20,9 +21,10 @@ type WebRouterDependencies struct {
 	AuthMiddleware *middleware.AuthMiddleware
 	MenuMiddleware *middleware.MenuMiddleware
 
-	Dashboard         *admin.DashboardController
-	Setting           *admin.SettingController
-	User              *admin.UserController
+	Dashboard *admin.DashboardController
+	User      *admin.UserController
+
+	Setting           *setting.SettingController
 	SystemSetting     *system.SystemSettingController
 	SettingSystemAuth *system.AuthController
 
