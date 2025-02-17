@@ -6,7 +6,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/modules/auth/service"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
 )
 
 type SystemSettingController struct {

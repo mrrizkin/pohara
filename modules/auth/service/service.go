@@ -13,13 +13,13 @@ import (
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/auth/repository"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/session"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/session"
 )
 
 type AuthService struct {
 	sessionStore *session.Store
-	log          *logger.ZeroLog
+	log          *logger.Logger
 	authRepo     *repository.AuthRepository
 }
 
@@ -27,7 +27,7 @@ type AuthServiceDependencies struct {
 	fx.In
 
 	SessionStore *session.Store
-	Logger       *logger.ZeroLog
+	Logger       *logger.Logger
 	AuthRepo     *repository.AuthRepository
 }
 

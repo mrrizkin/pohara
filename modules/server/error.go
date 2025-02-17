@@ -3,10 +3,13 @@ package server
 import (
 	"bufio"
 	"embed"
+	"errors"
+	"fmt"
 	"html/template"
 	"os"
 	"strings"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/modules/common/debug"
 )
 
@@ -23,6 +26,52 @@ type CodeLine struct {
 	Number    int
 	Content   string
 	IsCurrent bool
+}
+
+func ErrorHandler(isDev bool, c *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+	var e *fiber.Error
+	if errors.As(err, &e) {
+		code = e.Code
+	}
+
+	if c.Get("X-Requested-With") != "XMLHttpRequest" {
+		if isDev {
+			if stackTrace, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
+				html := errorPageWithTrace(stackTrace, err, code)
+				return c.Type("html").Status(code).Send([]byte(html))
+			}
+		}
+
+		html := errorPage(err, code)
+		return c.Type("html").Status(code).Send([]byte(html))
+	}
+
+	detail := ""
+	if isDev {
+		var stackFrames []debug.StackFrame
+		if stack, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
+			stackFrames = stack
+		} else if stack, err := debug.StackTrace(); err == nil {
+			stackFrames = stack
+		}
+
+		for _, frame := range stackFrames {
+			detail += fmt.Sprintf("%s (%s:%d)\n", frame.Function, frame.File, frame.Line)
+		}
+	}
+
+	var response struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Detail  string `json:"detail"`
+	}
+
+	response.Status = "error"
+	response.Message = err.Error()
+	response.Detail = detail
+
+	return c.Status(code).JSON(response)
 }
 
 func getModulePath() string {

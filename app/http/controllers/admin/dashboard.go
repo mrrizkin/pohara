@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
 )
 
 type DashboardController struct {

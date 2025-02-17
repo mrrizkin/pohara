@@ -3,19 +3,19 @@ package repository
 import (
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/modules/core/cache"
-	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/cache"
+	"github.com/mrrizkin/pohara/modules/database/db"
 )
 
 type AuthRepository struct {
-	db    *database.Database
+	db    *db.Database
 	cache *cache.Cache
 }
 
 type AuthRepositoryDependencies struct {
 	fx.In
 
-	DB    *database.Database
+	DB    *db.Database
 	Cache *cache.Cache
 }
 

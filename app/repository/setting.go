@@ -7,17 +7,17 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mrrizkin/pohara/app/model"
-	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/database/db"
 )
 
 type SettingRepository struct {
-	db *database.Database
+	db *db.Database
 }
 
 type SettingRepositoryDependencies struct {
 	fx.In
 
-	Database *database.Database
+	Database *db.Database
 }
 
 func NewSettingRepository(deps SettingRepositoryDependencies) *SettingRepository {

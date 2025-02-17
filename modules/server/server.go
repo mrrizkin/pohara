@@ -1,8 +1,6 @@
 package server
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -20,25 +18,24 @@ import (
 
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/common/debug"
-	"github.com/mrrizkin/pohara/modules/common/response"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/session"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/server/cli"
+	"github.com/mrrizkin/pohara/modules/session"
 )
 
 type Dependencies struct {
 	fx.In
 
 	Config *config.Config
-	Logger *logger.ZeroLog
+	Logger *logger.Logger
 }
 
 var Module = fx.Module("server",
-	fx.Provide(
-		NewServer,
+	fx.Provide(NewServer,
+		cli.NewStartServerCmd,
+		cli.RegisterCommands,
 	),
-
 	fx.Decorate(SetupRouter),
-	fx.Invoke(StartServer),
 )
 
 func NewServer(deps Dependencies) (*fiber.App, error) {
@@ -47,37 +44,7 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 		AppName:               deps.Config.App.Name,
 		DisableStartupMessage: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			code := fiber.StatusInternalServerError
-			var e *fiber.Error
-			if errors.As(err, &e) {
-				code = e.Code
-			}
-
-			if c.Get("X-Requested-With") != "XMLHttpRequest" {
-				if stackTrace, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
-					html := errorPageWithTrace(stackTrace, err, code)
-					return c.Type("html").Status(code).Send([]byte(html))
-				}
-
-				html := errorPage(err, code)
-				return c.Type("html").Status(code).Send([]byte(html))
-			}
-
-			detail := ""
-			if !deps.Config.IsProduction() {
-				var stackFrames []debug.StackFrame
-				if stack, ok := c.Locals("stack_trace").([]debug.StackFrame); ok {
-					stackFrames = stack
-				} else if stack, err := debug.StackTrace(); err == nil {
-					stackFrames = stack
-				}
-
-				for _, frame := range stackFrames {
-					detail += fmt.Sprintf("%s (%s:%d)\n", frame.Function, frame.File, frame.Line)
-				}
-			}
-
-			return c.Status(code).JSON(response.ErrorMsg(err.Error(), detail))
+			return ErrorHandler(!deps.Config.IsProduction(), c, err)
 		},
 	})
 
@@ -147,29 +114,29 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	return deps.App
 }
 
-func StartServer(
-	lx fx.Lifecycle,
-	app *fiber.App,
-	config *config.Config,
-	log *logger.ZeroLog,
-) error {
-	lx.Append(fx.Hook{
-		OnStart: func(context.Context) error {
-			go func() {
-				if err := app.Listen(fmt.Sprintf(":%d", config.App.Port)); err != nil {
-					log.Fatal("failed to start server", "error", err)
-				}
-			}()
-			log.Info("server started", "app_name", config.App.Name, "port", config.App.Port)
-			return nil
-		},
-		OnStop: func(context.Context) error {
-			return app.Shutdown()
-		},
-	})
+// func StartServer(
+// 	lx fx.Lifecycle,
+// 	app *fiber.App,
+// 	config *config.Config,
+// 	log *logger.Logger,
+// ) error {
+// 	lx.Append(fx.Hook{
+// 		OnStart: func(context.Context) error {
+// 			go func() {
+// 				if err := app.Listen(fmt.Sprintf(":%d", config.App.Port)); err != nil {
+// 					log.Fatal("failed to start server", "error", err)
+// 				}
+// 			}()
+// 			log.Info("server started", "app_name", config.App.Name, "port", config.App.Port)
+// 			return nil
+// 		},
+// 		OnStop: func(context.Context) error {
+// 			return app.Shutdown()
+// 		},
+// 	})
 
-	return nil
-}
+// 	return nil
+// }
 
 func swagger(config *config.Config) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {

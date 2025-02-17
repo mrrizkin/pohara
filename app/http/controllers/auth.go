@@ -10,9 +10,9 @@ import (
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/validator"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/validator"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 )
 
 type AuthController struct {
-	log       *logger.ZeroLog
+	log       *logger.Logger
 	inertia   *inertia.Inertia
 	validator *validator.Validator
 	hash      *hash.Hashing
@@ -33,7 +33,7 @@ type AuthController struct {
 type AuthControllerDependencies struct {
 	fx.In
 
-	Logger    *logger.ZeroLog
+	Logger    *logger.Logger
 	Inertia   *inertia.Inertia
 	Validator *validator.Validator
 	Hashing   *hash.Hashing

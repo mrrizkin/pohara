@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/modules/auth/access"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
 	"go.uber.org/fx"
 )
 

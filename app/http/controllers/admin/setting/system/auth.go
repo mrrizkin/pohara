@@ -9,15 +9,15 @@ import (
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
+	"github.com/mrrizkin/pohara/modules/logger"
 )
 
 type AuthController struct {
 	inertia  *inertia.Inertia
 	auth     *service.AuthService
 	roleRepo *repository.RoleRepository
-	log      *logger.ZeroLog
+	log      *logger.Logger
 }
 
 type AuthControllerDependencies struct {
@@ -26,7 +26,7 @@ type AuthControllerDependencies struct {
 	Inertia  *inertia.Inertia
 	Auth     *service.AuthService
 	RoleRepo *repository.RoleRepository
-	Logger   *logger.ZeroLog
+	Logger   *logger.Logger
 }
 
 func NewAuthController(deps AuthControllerDependencies) *AuthController {

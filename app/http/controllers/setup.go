@@ -2,18 +2,19 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/fx"
+
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/validator"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
-	"go.uber.org/fx"
+	"github.com/mrrizkin/pohara/modules/inertia"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/validator"
 )
 
 type SetupController struct {
-	log       *logger.ZeroLog
+	log       *logger.Logger
 	inertia   *inertia.Inertia
 	validator *validator.Validator
 	hash      *hash.Hashing
@@ -25,7 +26,7 @@ type SetupController struct {
 type SetupControllerDependencies struct {
 	fx.In
 
-	Logger    *logger.ZeroLog
+	Logger    *logger.Logger
 	Inertia   *inertia.Inertia
 	Validator *validator.Validator
 	Hashing   *hash.Hashing

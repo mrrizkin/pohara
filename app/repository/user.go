@@ -8,14 +8,14 @@ import (
 	"github.com/mrrizkin/pohara/modules/auth/access"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/validator"
-	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/database/db"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/validator"
 )
 
 type UserRepository struct {
-	db        *database.Database
-	log       *logger.ZeroLog
+	db        *db.Database
+	log       *logger.Logger
 	validator *validator.Validator
 	hashing   *hash.Hashing
 }
@@ -23,8 +23,8 @@ type UserRepository struct {
 type UserRepositoryDependencies struct {
 	fx.In
 
-	Database  *database.Database
-	Logger    *logger.ZeroLog
+	Database  *db.Database
+	Logger    *logger.Logger
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
 }

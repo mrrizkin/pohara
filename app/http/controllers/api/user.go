@@ -4,20 +4,21 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/fx"
+
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
+	"github.com/mrrizkin/pohara/app/response"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
-	"github.com/mrrizkin/pohara/modules/common/response"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/core/validator"
-	"go.uber.org/fx"
+	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/validator"
 )
 
 type UserController struct {
-	log       *logger.ZeroLog
+	log       *logger.Logger
 	validator *validator.Validator
 	userRepo  *repository.UserRepository
 	hashing   *hash.Hashing
@@ -28,7 +29,7 @@ type UserController struct {
 type UserControllerDependencies struct {
 	fx.In
 
-	Logger    *logger.ZeroLog
+	Logger    *logger.Logger
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
 

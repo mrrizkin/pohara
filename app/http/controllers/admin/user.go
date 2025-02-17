@@ -9,14 +9,14 @@ import (
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/modules/auth/service"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/core/logger"
-	"github.com/mrrizkin/pohara/modules/neoweb/inertia"
+	"github.com/mrrizkin/pohara/modules/inertia"
+	"github.com/mrrizkin/pohara/modules/logger"
 )
 
 type UserController struct {
 	inertia *inertia.Inertia
 	auth    *service.AuthService
-	log     *logger.ZeroLog
+	log     *logger.Logger
 
 	userRepo *repository.UserRepository
 }
@@ -26,7 +26,7 @@ type UserControllerDependencies struct {
 
 	Inertia *inertia.Inertia
 	Auth    *service.AuthService
-	Logger  *logger.ZeroLog
+	Logger  *logger.Logger
 
 	UserRepository *repository.UserRepository
 }

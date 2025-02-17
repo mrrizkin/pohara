@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mrrizkin/pohara/modules/neoweb/templ"
+	"github.com/mrrizkin/pohara/modules/templ"
 	"github.com/mrrizkin/pohara/resources/views/layouts/components"
 	"github.com/mrrizkin/pohara/resources/views/pages"
 )

@@ -3,18 +3,18 @@ package repository
 import (
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/database/db"
 	"go.uber.org/fx"
 )
 
 type RoleRepository struct {
-	db *database.Database
+	db *db.Database
 }
 
 type RoleRepositoryDependencies struct {
 	fx.In
 
-	Database *database.Database
+	Database *db.Database
 }
 
 func NewRoleRepository(deps RoleRepositoryDependencies) *RoleRepository {
@@ -22,6 +22,7 @@ func NewRoleRepository(deps RoleRepositoryDependencies) *RoleRepository {
 		db: deps.Database,
 	}
 }
+
 func (a *RoleRepository) CreateMRole(mRole *model.MRole) error {
 	result := a.db.Create(mRole)
 	if result.Error != nil {

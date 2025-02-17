@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/app/config"
-	neoweb "github.com/mrrizkin/pohara/modules/neoweb/templ"
-	"github.com/mrrizkin/pohara/modules/neoweb/vite"
+	tmpl "github.com/mrrizkin/pohara/modules/templ"
+	"github.com/mrrizkin/pohara/modules/vite"
 	"github.com/mrrizkin/pohara/resources/views/layouts/components"
 	"github.com/mrrizkin/pohara/resources/views/layouts/partials"
 )
@@ -23,7 +23,7 @@ type BaseProps struct {
 
 templ Base(props BaseProps) {
 	{{
-fiberCtx := ctx.Value(neoweb.FiberContextKey).(*fiber.Ctx)
+fiberCtx := ctx.Value(tmpl.FiberContextKey).(*fiber.Ctx)
 config := fiberCtx.Locals("config").(*config.Config)
 vite := fiberCtx.Locals("vite").(*vite.Vite)
 

@@ -2,12 +2,6 @@ package config
 
 import (
 	"time"
-
-	"github.com/mrrizkin/pohara/modules/common/config"
-)
-
-var Module = config.Load(
-	&Config{},
 )
 
 type Config struct {

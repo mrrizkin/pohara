@@ -1,0 +1,19 @@
+package migration
+
+import (
+	"github.com/mrrizkin/pohara/modules/database/migration"
+)
+
+type {{.Name}} struct{}
+
+func (m *{{.Name}}) ID() string {
+	return "{{.Filename}}"
+}
+
+func (m *{{.Name}}) Up(schema *migration.Schema) {
+	// your migration schema here
+}
+
+func (m *{{.Name}}) Down(schema *migration.Schema) {
+	// your rollback migration here
+}

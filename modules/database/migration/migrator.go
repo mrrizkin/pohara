@@ -2,12 +2,13 @@ package migration
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"go.uber.org/fx"
@@ -15,117 +16,53 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/mrrizkin/pohara/app/config"
-	"github.com/mrrizkin/pohara/modules/cli"
-	"github.com/mrrizkin/pohara/modules/database"
+	"github.com/mrrizkin/pohara/modules/database/db"
 	"github.com/mrrizkin/pohara/modules/database/migration/dialect"
+	"github.com/mrrizkin/pohara/modules/database/model"
+	"github.com/mrrizkin/pohara/modules/database/repository"
 )
 
-type Migration interface {
-	Up(schema *Schema)
-	Down(schema *Schema)
-	ID() string
-}
-
-type MigrationHistory struct {
-	ID        string    `json:"id"         gorm:"primary_key"`
-	Batch     int       `json:"batch"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-func (MigrationHistory) TableName() string {
-	return "__migration_history__"
-}
-
-type MigrationLoaderDependencies struct {
-	fx.In
-
-	Migrator   *Migrator
-	Migrations []Migration `group:"migration"`
-}
+//go:embed template/*
+var templateFS embed.FS
 
 type Migrator struct {
-	db         *database.Database
+	mhRepo     *repository.MigrationHistoryRepository
 	config     *config.Config
+	tmpl       *template.Template
 	migrations []Migration
 }
 
-type MigratorDependencies struct {
+type MigratorDeps struct {
 	fx.In
 
-	Db     *database.Database
+	MHRepo *repository.MigrationHistoryRepository
+	Db     *db.Database
 	Config *config.Config
 }
 
-var Module = fx.Module("migrator",
-	fx.Provide(
-		NewMigrator,
-		cli.AsCommand(NewMigratorCommand),
-	),
-	fx.Decorate(LoadMigration),
-)
-
-func NewMigrator(deps MigratorDependencies) *Migrator {
-	err := deps.Db.AutoMigrate(MigrationHistory{})
+func NewMigrator(deps MigratorDeps) *Migrator {
+	err := deps.Db.AutoMigrate(model.MigrationHistory{})
 	if err != nil {
 		panic(fmt.Sprintf("failed to migrate the __migration_history__: %v", err))
 	}
 
+	tmpl, err := template.New("template").ParseFS(templateFS, "template/*.go.tmpl")
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse template: %v", err))
+	}
+
 	return &Migrator{
-		db:     deps.Db,
+		mhRepo: deps.MHRepo,
 		config: deps.Config,
+		tmpl:   tmpl,
 	}
-}
-
-func LoadMigration(deps MigrationLoaderDependencies) *Migrator {
-	sortedMigrations := make([]Migration, len(deps.Migrations))
-	copy(sortedMigrations, deps.Migrations)
-
-	sort.Slice(sortedMigrations, func(i, j int) bool {
-		return sortedMigrations[i].ID() < sortedMigrations[j].ID()
-	})
-
-	for _, migration := range sortedMigrations {
-		deps.Migrator.AddMigration(migration)
-	}
-
-	return deps.Migrator
-}
-
-func ProvideMigration(migrations ...Migration) fx.Option {
-	var options []fx.Option
-
-	for _, migration := range migrations {
-		m := migration
-		options = append(options, fx.Provide(fx.Annotate(
-			func() Migration { return m },
-			fx.ResultTags(`group:"migration"`),
-		)))
-	}
-
-	return fx.Options(options...)
 }
 
 func (m *Migrator) AddMigration(migration Migration) {
 	m.migrations = append(m.migrations, migration)
 }
 
-func (m *Migrator) getNextBatchNumber() (int, error) {
-	var lastBatch struct {
-		MaxBatch int
-	}
-
-	err := m.db.Model(MigrationHistory{}).
-		Select("COALESCE(MAX(batch), 0) as max_batch").
-		Scan(&lastBatch).
-		Error
-	if err != nil {
-		return 0, err
-	}
-
-	return lastBatch.MaxBatch + 1, nil
-}
-
-func (m *Migrator) migrate() error {
+func (m *Migrator) Migrate() error {
 	dialect, err := m.getDialect()
 	if err != nil {
 		return err
@@ -133,13 +70,12 @@ func (m *Migrator) migrate() error {
 
 	schema := NewSchema(dialect)
 	migrations := make(map[string]Migration)
-	var histories []MigrationHistory
-
-	if err := m.db.Order("id ASC").Find(&histories).Error; err != nil {
+	histories, err := m.mhRepo.GetMigrationHistory("id ASC")
+	if err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
-	executedMigrations := make(map[string]MigrationHistory)
+	executedMigrations := make(map[string]model.MigrationHistory)
 	for _, h := range histories {
 		executedMigrations[h.ID] = h
 	}
@@ -157,70 +93,55 @@ func (m *Migrator) migrate() error {
 	}
 
 	// get next batch number
-	batchNumber, err := m.getNextBatchNumber()
+	batchNumber, err := m.mhRepo.GetNextBatchNumber()
 	if err != nil {
 		return fmt.Errorf("failed to get next batch number: %v", err)
 	}
 
-	var history []*MigrationHistory
+	var history []*model.MigrationHistory
 	for id, migration := range migrations {
 		migration.Up(schema)
-		history = append(history, &MigrationHistory{
+		history = append(history, &model.MigrationHistory{
 			ID:    id,
 			Batch: batchNumber,
 		})
 	}
 
 	statements := schema.statement()
-	tx := m.db.Begin()
-	for _, statement := range statements {
-		if err := tx.Exec(statement).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to execute migration: %v", err)
-		}
-	}
-
-	if err := tx.Create(history).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to record migration: %v", err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return fmt.Errorf("failed to commit migration: %v", err)
+	err = m.mhRepo.MigrationMigrate(statements, history)
+	if err != nil {
+		return fmt.Errorf("failed migrate: %v", err)
 	}
 
 	fmt.Printf("Batch %d complete. %d migration executed.\n", batchNumber, len(migrations))
 	return nil
 }
 
-func (m *Migrator) rollbackLastBatch() error {
-	lastBatch, err := m.getNextBatchNumber()
+func (m *Migrator) RollbackLastBatch() error {
+	lastBatch, err := m.mhRepo.GetNextBatchNumber()
 	if err != nil {
 		return err
 	}
 	lastBatch--
 
-	var histories []MigrationHistory
-	if err := m.db.Where("batch = ?", lastBatch).
-		Order("id DESC").
-		Find(&histories).Error; err != nil {
+	histories, err := m.mhRepo.GetMigrationHistoryByBatch(lastBatch, "id DESC")
+	if err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
 	return m.rollbackMigrations(histories)
 }
 
-func (m *Migrator) rollbackAll() error {
-	var histories []MigrationHistory
-	if err := m.db.Order("batch DESC, id DESC").
-		Find(&histories).Error; err != nil {
+func (m *Migrator) RollbackAll() error {
+	histories, err := m.mhRepo.GetMigrationHistory("batch DESC, id DESC")
+	if err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
 	return m.rollbackMigrations(histories)
 }
 
-func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
+func (m *Migrator) rollbackMigrations(histories []model.MigrationHistory) error {
 	dialect, err := m.getDialect()
 	if err != nil {
 		return err
@@ -236,27 +157,9 @@ func (m *Migrator) rollbackMigrations(histories []MigrationHistory) error {
 	}
 
 	statements := schema.statement()
-	tx := m.db.Begin()
-	for _, statement := range statements {
-		if err := tx.Exec(statement).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to rollback migration: %v", err)
-		}
-	}
-
-	for _, history := range histories {
-		if err := tx.Exec("DELETE FROM __migration_history__ WHERE id = ?", history.ID).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to remove migration record: %v", err)
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return fmt.Errorf("failed to commit rollback: %v", err)
-	}
-
-	for _, history := range histories {
-		fmt.Printf("Rolled back migration: (Batch %d)\n", history.Batch)
+	err = m.mhRepo.MigrationRollback(statements, histories)
+	if err != nil {
+		return fmt.Errorf("failed rollback: %v", err)
 	}
 
 	return nil
@@ -275,13 +178,13 @@ func (m *Migrator) getDialect() (Dialect, error) {
 	}
 }
 
-func (m *Migrator) status() error {
-	var histories []MigrationHistory
-	if err := m.db.Order("id ASC").Find(&histories).Error; err != nil {
+func (m *Migrator) Status() error {
+	histories, err := m.mhRepo.GetMigrationHistory("id ASC")
+	if err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
 	}
 
-	executedMigrations := make(map[string]MigrationHistory)
+	executedMigrations := make(map[string]model.MigrationHistory)
 	for _, h := range histories {
 		executedMigrations[h.ID] = h
 	}
@@ -371,7 +274,7 @@ func (m *Migrator) status() error {
 	return nil
 }
 
-func (m *Migrator) createMigration(name string) error {
+func (m *Migrator) CreateMigration(name string) error {
 	// if the name is empty, generate a random name
 	if name == "" {
 		name = fmt.Sprintf("migration_%d", time.Now().UnixNano())
@@ -404,7 +307,10 @@ func (m *Migrator) createMigration(name string) error {
 	name = strings.ReplaceAll(name, " ", "")
 
 	// write the migration template to the file
-	_, err = fmt.Fprintf(file, migrationTemplate, name, name, filename, name, name)
+	err = m.tmpl.ExecuteTemplate(file, "new_migration", map[string]interface{}{
+		"Name":     name,
+		"Filename": filename,
+	})
 	if err != nil {
 		return err
 	}
@@ -443,25 +349,3 @@ func (m *Migrator) createMigration(name string) error {
 
 	return nil
 }
-
-// migrationTemplate is the template for a migration file
-const migrationTemplate = `package migration
-
-import (
-	"github.com/mrrizkin/pohara/modules/database/migration"
-)
-
-type %s struct{}
-
-func (m *%s) ID() string {
-	return "%s"
-}
-
-func (m *%s) Up(schema *migration.Schema) {
-	// your migration schema here
-}
-
-func (m *%s) Down(schema *migration.Schema) {
-	// your rollback migration here
-}
-`

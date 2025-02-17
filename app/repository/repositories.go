@@ -4,16 +4,7 @@ import (
 	"math"
 
 	"github.com/mrrizkin/pohara/modules/common/sql"
-	"go.uber.org/fx"
 	"gorm.io/gorm"
-)
-
-var Module = fx.Module("repository",
-	fx.Provide(
-		NewUserRepository,
-		NewSettingRepository,
-		NewRoleRepository,
-	),
 )
 
 type PaginationResult[T any] struct {

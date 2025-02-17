@@ -3,7 +3,6 @@ package hash
 import (
 	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/common/hash/algorithm"
-	"go.uber.org/fx"
 )
 
 type Algorithm interface {
@@ -14,10 +13,6 @@ type Algorithm interface {
 type Hashing struct {
 	algorithm Algorithm
 }
-
-var Module = fx.Module("hashing",
-	fx.Provide(New),
-)
 
 func New(config *config.Config) *Hashing {
 	var algo Algorithm
