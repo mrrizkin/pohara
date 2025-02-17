@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,8 +40,7 @@ type MigratorDeps struct {
 }
 
 func NewMigrator(deps MigratorDeps) *Migrator {
-	err := deps.Db.AutoMigrate(model.MigrationHistory{})
-	if err != nil {
+	if err := deps.Db.AutoMigrate(model.MigrationHistory{}); err != nil {
 		panic(fmt.Sprintf("failed to migrate the __migration_history__: %v", err))
 	}
 
@@ -69,7 +67,6 @@ func (m *Migrator) Migrate() error {
 	}
 
 	schema := NewSchema(dialect)
-	migrations := make(map[string]Migration)
 	histories, err := m.mhRepo.GetMigrationHistory("id ASC")
 	if err != nil {
 		return fmt.Errorf("failed to get migration history: %v", err)
@@ -80,24 +77,40 @@ func (m *Migrator) Migrate() error {
 		executedMigrations[h.ID] = h
 	}
 
-	for _, migration := range m.migrations {
-		id := migration.ID()
-		if _, exists := executedMigrations[id]; !exists {
-			migrations[id] = migration
-		}
-	}
-
-	if len(migrations) == 0 {
+	pendingMigrations := m.getPendingMigrations(executedMigrations)
+	if len(pendingMigrations) == 0 {
 		fmt.Println("Nothing to migrate")
 		return nil
 	}
 
-	// get next batch number
 	batchNumber, err := m.mhRepo.GetNextBatchNumber()
 	if err != nil {
 		return fmt.Errorf("failed to get next batch number: %v", err)
 	}
 
+	history := m.applyMigrations(schema, pendingMigrations, batchNumber)
+	statements := schema.statement()
+
+	if err := m.mhRepo.MigrationMigrate(statements, history); err != nil {
+		return fmt.Errorf("failed migrate: %v", err)
+	}
+
+	fmt.Printf("Batch %d complete. %d migration executed.\n", batchNumber, len(pendingMigrations))
+	return nil
+}
+
+func (m *Migrator) getPendingMigrations(executedMigrations map[string]model.MigrationHistory) map[string]Migration {
+	pendingMigrations := make(map[string]Migration)
+	for _, migration := range m.migrations {
+		id := migration.ID()
+		if _, exists := executedMigrations[id]; !exists {
+			pendingMigrations[id] = migration
+		}
+	}
+	return pendingMigrations
+}
+
+func (m *Migrator) applyMigrations(schema *Schema, migrations map[string]Migration, batchNumber int) []*model.MigrationHistory {
 	var history []*model.MigrationHistory
 	for id, migration := range migrations {
 		migration.Up(schema)
@@ -106,15 +119,7 @@ func (m *Migrator) Migrate() error {
 			Batch: batchNumber,
 		})
 	}
-
-	statements := schema.statement()
-	err = m.mhRepo.MigrationMigrate(statements, history)
-	if err != nil {
-		return fmt.Errorf("failed migrate: %v", err)
-	}
-
-	fmt.Printf("Batch %d complete. %d migration executed.\n", batchNumber, len(migrations))
-	return nil
+	return history
 }
 
 func (m *Migrator) RollbackLastBatch() error {
@@ -149,16 +154,15 @@ func (m *Migrator) rollbackMigrations(histories []model.MigrationHistory) error 
 
 	schema := NewSchema(dialect)
 	for _, history := range histories {
-		for _, m := range m.migrations {
-			if m.ID() == history.ID {
-				m.Down(schema)
+		for _, migration := range m.migrations {
+			if migration.ID() == history.ID {
+				migration.Down(schema)
 			}
 		}
 	}
 
 	statements := schema.statement()
-	err = m.mhRepo.MigrationRollback(statements, histories)
-	if err != nil {
+	if err := m.mhRepo.MigrationRollback(statements, histories); err != nil {
 		return fmt.Errorf("failed rollback: %v", err)
 	}
 
@@ -167,14 +171,14 @@ func (m *Migrator) rollbackMigrations(histories []model.MigrationHistory) error 
 
 func (m *Migrator) getDialect() (Dialect, error) {
 	switch m.config.Database.Driver {
-	default:
-		return nil, fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
 	case "pgsql", "postgres", "postgresql":
 		return &dialect.PostgresDialect{}, nil
 	case "mysql", "mariadb", "maria":
 		return &dialect.MySqlDialect{}, nil
 	case "sqlite", "sqlite3", "file":
 		return &dialect.SQLiteDialect{}, nil
+	default:
+		return nil, fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
 	}
 }
 
@@ -189,7 +193,13 @@ func (m *Migrator) Status() error {
 		executedMigrations[h.ID] = h
 	}
 
-	// Determine max column widths
+	maxMigrationLen, maxBatchLen, maxExecutedLen := m.calculateColumnWidths(histories, executedMigrations)
+	m.printMigrationStatusTable(executedMigrations, maxMigrationLen, maxBatchLen, maxExecutedLen)
+
+	return nil
+}
+
+func (m *Migrator) calculateColumnWidths(histories []model.MigrationHistory, executedMigrations map[string]model.MigrationHistory) (int, int, int) {
 	maxMigrationLen := len("Migration")
 	maxBatchLen := len("Batch")
 	maxExecutedLen := len("Executed At")
@@ -221,7 +231,10 @@ func (m *Migrator) Status() error {
 		maxExecutedLen = len("Not Executed")
 	}
 
-	// Print table header
+	return maxMigrationLen, maxBatchLen, maxExecutedLen
+}
+
+func (m *Migrator) printMigrationStatusTable(executedMigrations map[string]model.MigrationHistory, maxMigrationLen, maxBatchLen, maxExecutedLen int) {
 	fmt.Println("\nMigration Status:")
 	fmt.Printf(
 		"+-%s-+-%s-+-%s-+\n",
@@ -245,7 +258,6 @@ func (m *Migrator) Status() error {
 		strings.Repeat("-", maxExecutedLen),
 	)
 
-	// Print migration statuses
 	for _, migration := range m.migrations {
 		id := migration.ID()
 		if history, exists := executedMigrations[id]; exists {
@@ -264,86 +276,60 @@ func (m *Migrator) Status() error {
 		}
 	}
 
-	// Print table footer
 	fmt.Printf(
 		"+-%s-+-%s-+-%s-+\n",
 		strings.Repeat("-", maxMigrationLen),
 		strings.Repeat("-", maxBatchLen),
 		strings.Repeat("-", maxExecutedLen),
 	)
-	return nil
 }
 
 func (m *Migrator) CreateMigration(name string) error {
-	// if the name is empty, generate a random name
 	if name == "" {
 		name = fmt.Sprintf("migration_%d", time.Now().UnixNano())
 	}
 
-	// add timestamp to migration name and make it lowercase
 	filename := fmt.Sprintf("%s_%s", time.Now().Format("20060102150405"), strings.ToLower(name))
+	migrationDir := filepath.Join("database", "migration")
+	migrationFile := filepath.Join(migrationDir, fmt.Sprintf("%s.go", filename))
 
-	// check if the directory exist
-	if _, err := os.Stat(filepath.Join("database", "migration")); os.IsNotExist(err) {
-		if err := os.Mkdir(filepath.Join("database", "migration"), 0755); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(migrationDir, 0755); err != nil {
+		return err
 	}
 
-	// check if the file exist
-	if _, err := os.Stat(filepath.Join("database", "migration", fmt.Sprintf("%s.go", filename))); err == nil {
+	if _, err := os.Stat(migrationFile); err == nil {
 		return fmt.Errorf("migration %s already exist", filename)
 	}
 
-	// create a file in the migrations directory
-	file, err := os.Create(filepath.Join("database", "migration", fmt.Sprintf("%s.go", filename)))
+	file, err := os.Create(migrationFile)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// resolve name from snake_case to CamelCase
 	name = cases.Title(language.English, cases.NoLower).String(strings.ReplaceAll(name, "_", " "))
 	name = strings.ReplaceAll(name, " ", "")
 
-	// write the migration template to the file
-	err = m.tmpl.ExecuteTemplate(file, "new_migration", map[string]interface{}{
+	if err := m.tmpl.ExecuteTemplate(file, "new_migration", map[string]interface{}{
 		"Name":     name,
 		"Filename": filename,
-	})
+	}); err != nil {
+		return err
+	}
+
+	migrationEntryPath := filepath.Join(migrationDir, "migration.go")
+	content, err := os.ReadFile(migrationEntryPath)
 	if err != nil {
 		return err
 	}
 
-	migrationEntry, err := os.Open(filepath.Join("database", "migration", "migration.go"))
-	if err != nil {
-		return err
-	}
-
-	// replace the /** PLACEHOLDER **/ with the struct name
-	content, err := io.ReadAll(migrationEntry)
-	if err != nil {
-		return err
-	}
-	migrationEntry.Close()
-
-	// replace the /** PLACEHOLDER **/ with the struct name
 	content = bytes.ReplaceAll(
 		content,
 		[]byte("/** PLACEHOLDER **/"),
 		[]byte("&"+name+"{},\n\t\t/** PLACEHOLDER **/"),
 	)
 
-	// create a new file in the migrations directory
-	migrationEntry, err = os.Create(filepath.Join("database", "migration", "migration.go"))
-	if err != nil {
-		return err
-	}
-	defer migrationEntry.Close()
-
-	// write the updated content to the file
-	_, err = migrationEntry.Write(content)
-	if err != nil {
+	if err := os.WriteFile(migrationEntryPath, content, 0644); err != nil {
 		return err
 	}
 
