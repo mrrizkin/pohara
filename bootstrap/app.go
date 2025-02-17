@@ -15,6 +15,7 @@ import (
 	"github.com/mrrizkin/pohara/modules/logger"
 	"github.com/mrrizkin/pohara/modules/scheduler"
 	"github.com/mrrizkin/pohara/modules/server"
+	"github.com/mrrizkin/pohara/modules/session"
 	"github.com/mrrizkin/pohara/modules/templ"
 	"github.com/mrrizkin/pohara/modules/validator"
 	"github.com/mrrizkin/pohara/modules/vite"
@@ -33,6 +34,7 @@ func App() *fx.App {
 		migration.Module,
 		scheduler.Module,
 		server.Module,
+		session.Module,
 		templ.Module,
 		validator.Module,
 		vite.Module,
