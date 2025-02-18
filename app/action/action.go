@@ -1,7 +1,7 @@
 package action
 
 import (
-	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/modules/abac/access"
 )
 
 var (
@@ -15,23 +15,27 @@ var (
 	Delete = access.NewResourceAction("common", "delete")
 
 	/* you can integrate the page access to inertia in app/htt/middlware/menu */
-	PageUser = access.NewViewPageAction("page-user")
+	PageUser = NewViewPageAction("page-user")
 
-	PageSettingProfile      = access.NewViewPageAction("page-setting-profile")
-	PageSettingAccount      = access.NewViewPageAction("page-setting-account")
-	PageSettingAppearance   = access.NewViewPageAction("page-setting-appearance")
-	PageSettingNotification = access.NewViewPageAction("page-setting-notification")
-	PageSettingDisplay      = access.NewViewPageAction("page-setting-display")
+	PageSettingProfile      = NewViewPageAction("page-setting-profile")
+	PageSettingAccount      = NewViewPageAction("page-setting-account")
+	PageSettingAppearance   = NewViewPageAction("page-setting-appearance")
+	PageSettingNotification = NewViewPageAction("page-setting-notification")
+	PageSettingDisplay      = NewViewPageAction("page-setting-display")
 
-	PageSystemSettingBranding     = access.NewViewPageAction("page-system-setting-branding")
-	PageSystemSettingIntegration  = access.NewViewPageAction("page-system-setting-integration")
-	PageSystemSettingGeneral      = access.NewViewPageAction("page-system-setting-general")
-	PageSystemSettingSecurity     = access.NewViewPageAction("page-system-setting-security")
-	PageSystemSettingLocalization = access.NewViewPageAction("page-system-setting-localization")
-	PageSystemSettingNotification = access.NewViewPageAction("page-system-setting-notification")
-	PageSystemSettingBackup       = access.NewViewPageAction("page-system-setting-backup")
-	PageSystemSettingPurge        = access.NewViewPageAction("page-system-setting-purge")
+	PageSystemSettingBranding     = NewViewPageAction("page-system-setting-branding")
+	PageSystemSettingIntegration  = NewViewPageAction("page-system-setting-integration")
+	PageSystemSettingGeneral      = NewViewPageAction("page-system-setting-general")
+	PageSystemSettingSecurity     = NewViewPageAction("page-system-setting-security")
+	PageSystemSettingLocalization = NewViewPageAction("page-system-setting-localization")
+	PageSystemSettingNotification = NewViewPageAction("page-system-setting-notification")
+	PageSystemSettingBackup       = NewViewPageAction("page-system-setting-backup")
+	PageSystemSettingPurge        = NewViewPageAction("page-system-setting-purge")
 
-	PageSystemAuthRole   = access.NewViewPageAction("page-system-auth-role")
-	PageSystemAuthPolicy = access.NewViewPageAction("page-system-auth-policy")
+	PageSystemAuthRole   = NewViewPageAction("page-system-auth-role")
+	PageSystemAuthPolicy = NewViewPageAction("page-system-auth-policy")
 )
+
+func NewViewPageAction(resource string) access.Action {
+	return access.NewResourceAction(resource, "view-page")
+}

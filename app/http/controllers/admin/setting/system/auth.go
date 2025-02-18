@@ -7,7 +7,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/repository"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/modules/abac/service"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/inertia"
 	"github.com/mrrizkin/pohara/modules/logger"
@@ -15,7 +15,7 @@ import (
 
 type AuthController struct {
 	inertia  *inertia.Inertia
-	auth     *service.AuthService
+	auth     *service.Authorization
 	roleRepo *repository.RoleRepository
 	log      *logger.Logger
 }
@@ -24,7 +24,7 @@ type AuthControllerDependencies struct {
 	fx.In
 
 	Inertia  *inertia.Inertia
-	Auth     *service.AuthService
+	Auth     *service.Authorization
 	RoleRepo *repository.RoleRepository
 	Logger   *logger.Logger
 }

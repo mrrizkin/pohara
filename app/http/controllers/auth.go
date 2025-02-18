@@ -8,7 +8,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/repository"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/app/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/inertia"
 	"github.com/mrrizkin/pohara/modules/logger"

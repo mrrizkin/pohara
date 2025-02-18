@@ -4,6 +4,6 @@ package access
 type Effect string
 
 const (
-	EffectAllow Effect = "allow"
-	EffectDeny  Effect = "deny"
+	EffectAllow = Effect("allow")
+	EffectDeny  = Effect("deny")
 )

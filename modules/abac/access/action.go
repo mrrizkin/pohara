@@ -22,14 +22,6 @@ func NewResourceAction(resource string, action string) Action {
 	}
 }
 
-func NewViewPageAction(resource string) Action {
-	return Action{
-		Valid:    true,
-		Type:     "view",
-		Resource: resource,
-	}
-}
-
 // Scan implements the Scanner interface.
 func (n *Action) Scan(value interface{}) error {
 	if value == nil {

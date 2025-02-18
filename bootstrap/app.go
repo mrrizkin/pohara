@@ -5,8 +5,10 @@ import (
 	"go.uber.org/fx/fxevent"
 
 	"github.com/mrrizkin/pohara/app"
+	"github.com/mrrizkin/pohara/app/service"
 	"github.com/mrrizkin/pohara/database/migration"
-	"github.com/mrrizkin/pohara/modules/auth"
+	"github.com/mrrizkin/pohara/modules/abac"
+	"github.com/mrrizkin/pohara/modules/abac/interfaces"
 	"github.com/mrrizkin/pohara/modules/cache"
 	"github.com/mrrizkin/pohara/modules/cli"
 	"github.com/mrrizkin/pohara/modules/common"
@@ -24,7 +26,7 @@ import (
 func App() *fx.App {
 	return fx.New(
 		app.Module,
-		auth.Module,
+		abac.Module,
 		cache.Module,
 		cli.Module,
 		common.Module,
@@ -38,6 +40,10 @@ func App() *fx.App {
 		templ.Module,
 		validator.Module,
 		vite.Module,
+
+		fx.Provide(func(authService *service.AuthService) interfaces.AuthService {
+			return authService
+		}),
 
 		fx.WithLogger(func(logger *logger.Logger) fxevent.Logger {
 			return logger

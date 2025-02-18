@@ -17,8 +17,8 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/config"
-	"github.com/mrrizkin/pohara/modules/auth/access"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/modules/abac/access"
+	"github.com/mrrizkin/pohara/modules/abac/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/session"
 	"github.com/mrrizkin/pohara/modules/vite"
@@ -33,7 +33,7 @@ const (
 
 type Inertia struct {
 	core         *gonertia.Inertia
-	auth         *service.AuthService
+	auth         *service.Authorization
 	sessionStore *session.Store
 }
 
@@ -43,7 +43,7 @@ type Dependencies struct {
 	SessionStore *session.Store
 	Config       *config.Config
 	Vite         *vite.Vite
-	Auth         *service.AuthService
+	Auth         *service.Authorization
 }
 
 func New(deps Dependencies) (*Inertia, error) {

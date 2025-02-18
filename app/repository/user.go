@@ -5,7 +5,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
-	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/modules/abac/access"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/database/db"
@@ -43,7 +43,7 @@ func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 		Name:     "Allow All Function",
 		Action:   action.SpecialAll,
 		Effect:   access.EffectAllow,
-		Resource: "all",
+		Resource: sql.String("all"),
 	}
 
 	role := model.MRole{

@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mrrizkin/pohara/app/action"
-	"github.com/mrrizkin/pohara/modules/auth/access"
+	"github.com/mrrizkin/pohara/modules/abac/access"
 	"github.com/mrrizkin/pohara/modules/inertia"
 	"go.uber.org/fx"
 )

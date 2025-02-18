@@ -15,3 +15,7 @@ type MUser struct {
 func (MUser) TableName() string {
 	return "m_user"
 }
+
+func (MUser) ResourceName() sql.StringNullable {
+	return sql.String("m_user")
+}

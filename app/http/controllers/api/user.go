@@ -10,7 +10,7 @@ import (
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/app/response"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/modules/abac/service"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/logger"
@@ -23,7 +23,7 @@ type UserController struct {
 	userRepo  *repository.UserRepository
 	hashing   *hash.Hashing
 
-	authService *service.AuthService
+	authService *service.Authorization
 }
 
 type UserControllerDependencies struct {
@@ -33,7 +33,7 @@ type UserControllerDependencies struct {
 	Validator *validator.Validator
 	Hashing   *hash.Hashing
 
-	AuthService *service.AuthService
+	AuthService *service.Authorization
 
 	UserRepository *repository.UserRepository
 }

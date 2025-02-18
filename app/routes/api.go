@@ -5,7 +5,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/http/controllers/api"
-	"github.com/mrrizkin/pohara/modules/auth/service"
+	"github.com/mrrizkin/pohara/app/service"
 	"github.com/mrrizkin/pohara/modules/server"
 )
 
