@@ -7,32 +7,34 @@ import (
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/repository"
-	"github.com/mrrizkin/pohara/modules/abac/service"
+	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/inertia"
 	"github.com/mrrizkin/pohara/modules/logger"
 )
 
 type AuthController struct {
-	inertia  *inertia.Inertia
-	auth     *service.Authorization
+	inertia *inertia.Inertia
+	auth    *abac.Authorization
+	log     *logger.Logger
+
 	roleRepo *repository.RoleRepository
-	log      *logger.Logger
 }
 
 type AuthControllerDependencies struct {
 	fx.In
 
-	Inertia  *inertia.Inertia
-	Auth     *service.Authorization
+	Inertia       *inertia.Inertia
+	Authorization *abac.Authorization
+	Logger        *logger.Logger
+
 	RoleRepo *repository.RoleRepository
-	Logger   *logger.Logger
 }
 
 func NewAuthController(deps AuthControllerDependencies) *AuthController {
 	return &AuthController{
 		inertia:  deps.Inertia,
-		auth:     deps.Auth,
+		auth:     deps.Authorization,
 		roleRepo: deps.RoleRepo,
 		log:      deps.Logger.Scope("system_setting_auth_controller"),
 	}

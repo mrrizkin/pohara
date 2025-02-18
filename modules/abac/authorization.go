@@ -1,4 +1,4 @@
-package service
+package abac
 
 import (
 	"errors"
@@ -9,21 +9,20 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/modules/abac/access"
-	"github.com/mrrizkin/pohara/modules/abac/interfaces"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/logger"
 )
 
 type Authorization struct {
 	log     *logger.Logger
-	service interfaces.AuthService
+	service AuthService
 }
 
 type AuthorizationServiceDeps struct {
 	fx.In
 
 	Logger  *logger.Logger
-	Service interfaces.AuthService
+	Service AuthService
 }
 
 func NewAuthorizationService(deps AuthorizationServiceDeps) *Authorization {
@@ -36,7 +35,7 @@ func NewAuthorizationService(deps AuthorizationServiceDeps) *Authorization {
 func (a *Authorization) Can(
 	ctx *fiber.Ctx,
 	action access.Action,
-	resource interfaces.Resource,
+	resource Resource,
 ) bool {
 	if a.service == nil {
 		return false
@@ -106,7 +105,7 @@ func (a *Authorization) Can(
 }
 
 func (a *Authorization) evaluatePolicy(
-	policy interfaces.Policy,
+	policy Policy,
 	data map[string]interface{},
 ) (bool, error) {
 	// we can optimize this using precompile method.. and mapped it with policy.id as a key

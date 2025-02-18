@@ -10,7 +10,7 @@ import (
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
 	"github.com/mrrizkin/pohara/app/response"
-	"github.com/mrrizkin/pohara/modules/abac/service"
+	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/common/hash"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/logger"
@@ -20,20 +20,19 @@ import (
 type UserController struct {
 	log       *logger.Logger
 	validator *validator.Validator
-	userRepo  *repository.UserRepository
 	hashing   *hash.Hashing
+	auth      *abac.Authorization
 
-	authService *service.Authorization
+	userRepo *repository.UserRepository
 }
 
 type UserControllerDependencies struct {
 	fx.In
 
-	Logger    *logger.Logger
-	Validator *validator.Validator
-	Hashing   *hash.Hashing
-
-	AuthService *service.Authorization
+	Logger        *logger.Logger
+	Validator     *validator.Validator
+	Hashing       *hash.Hashing
+	Authorization *abac.Authorization
 
 	UserRepository *repository.UserRepository
 }
@@ -43,8 +42,7 @@ func NewUserController(deps UserControllerDependencies) *UserController {
 		log:       deps.Logger.Scope("user_controller"),
 		validator: deps.Validator,
 		hashing:   deps.Hashing,
-
-		authService: deps.AuthService,
+		auth:      deps.Authorization,
 
 		userRepo: deps.UserRepository,
 	}
@@ -77,7 +75,7 @@ type UserUpdatePayload struct {
 //	@Failure		  500		    {object}	validator.GlobalErrorResponse		"Internal server error"
 //	@Router			  /user     [post]
 func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, action.Create, nil) {
+	if !c.auth.Can(ctx, action.Create, nil) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to create user")
 	}
 
@@ -141,7 +139,7 @@ func (c *UserController) UserCreate(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	validator.GlobalErrorResponse									"Internal server error"
 //	@Router			/user [get]
 func (c *UserController) UserFind(ctx *fiber.Ctx) error {
-	if !c.authService.Can(ctx, action.Read, nil) {
+	if !c.auth.Can(ctx, action.Read, nil) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get users")
 	}
 
@@ -224,7 +222,7 @@ func (c *UserController) UserFindByID(ctx *fiber.Ctx) error {
 		)
 	}
 
-	if !c.authService.Can(ctx, action.Read, user) {
+	if !c.auth.Can(ctx, action.Read, user) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to get user")
 	}
 
@@ -280,7 +278,7 @@ func (c *UserController) UserUpdate(ctx *fiber.Ctx) error {
 		)
 	}
 
-	if !c.authService.Can(ctx, action.Update, user) {
+	if !c.auth.Can(ctx, action.Update, user) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to update user")
 	}
 
@@ -358,7 +356,7 @@ func (c *UserController) UserDelete(ctx *fiber.Ctx) error {
 		)
 	}
 
-	if !c.authService.Can(ctx, action.Delete, user) {
+	if !c.auth.Can(ctx, action.Delete, user) {
 		return fiber.NewError(fiber.StatusForbidden, "you are not allowed to delete user")
 	}
 

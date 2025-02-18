@@ -5,26 +5,26 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/mrrizkin/pohara/app/action"
-	"github.com/mrrizkin/pohara/modules/abac/service"
+	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/inertia"
 )
 
 type SystemSettingController struct {
 	inertia *inertia.Inertia
-	auth    *service.Authorization
+	auth    *abac.Authorization
 }
 
 type SystemSettingControllerDependencies struct {
 	fx.In
 
-	Inertia *inertia.Inertia
-	Auth    *service.Authorization
+	Inertia       *inertia.Inertia
+	Authorization *abac.Authorization
 }
 
 func NewSystemSettingController(deps SystemSettingControllerDependencies) *SystemSettingController {
 	return &SystemSettingController{
 		inertia: deps.Inertia,
-		auth:    deps.Auth,
+		auth:    deps.Authorization,
 	}
 }
 

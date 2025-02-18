@@ -16,6 +16,6 @@ func (MUser) TableName() string {
 	return "m_user"
 }
 
-func (MUser) ResourceName() sql.StringNullable {
-	return sql.String("m_user")
+func (m MUser) ResourceName() sql.StringNullable {
+	return sql.String(m.TableName())
 }

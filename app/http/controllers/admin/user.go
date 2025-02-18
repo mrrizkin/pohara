@@ -7,7 +7,7 @@ import (
 
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/repository"
-	"github.com/mrrizkin/pohara/modules/abac/service"
+	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/inertia"
 	"github.com/mrrizkin/pohara/modules/logger"
@@ -15,7 +15,7 @@ import (
 
 type UserController struct {
 	inertia *inertia.Inertia
-	auth    *service.Authorization
+	auth    *abac.Authorization
 	log     *logger.Logger
 
 	userRepo *repository.UserRepository
@@ -24,9 +24,9 @@ type UserController struct {
 type UserControllerDependencies struct {
 	fx.In
 
-	Inertia *inertia.Inertia
-	Auth    *service.Authorization
-	Logger  *logger.Logger
+	Inertia       *inertia.Inertia
+	Authorization *abac.Authorization
+	Logger        *logger.Logger
 
 	UserRepository *repository.UserRepository
 }
@@ -34,7 +34,7 @@ type UserControllerDependencies struct {
 func NewUserController(deps UserControllerDependencies) *UserController {
 	return &UserController{
 		inertia:  deps.Inertia,
-		auth:     deps.Auth,
+		auth:     deps.Authorization,
 		log:      deps.Logger.Scope("admin_user_controller"),
 		userRepo: deps.UserRepository,
 	}

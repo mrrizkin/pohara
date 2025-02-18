@@ -1,4 +1,4 @@
-package interfaces
+package abac
 
 import (
 	"github.com/gofiber/fiber/v2"

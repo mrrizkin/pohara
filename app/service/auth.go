@@ -7,8 +7,8 @@ import (
 	"github.com/mrrizkin/pohara/app/action"
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/app/repository"
+	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/abac/access"
-	"github.com/mrrizkin/pohara/modules/abac/interfaces"
 	"github.com/mrrizkin/pohara/modules/logger"
 	"github.com/mrrizkin/pohara/modules/session"
 	"go.uber.org/fx"
@@ -44,8 +44,8 @@ type Subject struct {
 	roles     []model.MRole
 }
 
-func (a *Subject) GetPolicies() ([]interfaces.Policy, error) {
-	policies := make([]interfaces.Policy, 0)
+func (a *Subject) GetPolicies() ([]abac.Policy, error) {
+	policies := make([]abac.Policy, 0)
 
 	for _, role := range a.roles {
 		for _, policy := range role.Policies {
@@ -64,7 +64,7 @@ func (a AuthService) GetSubjectName() string {
 	return "User"
 }
 
-func (a AuthService) GetSubject(ctx *fiber.Ctx) (interfaces.Subject, error) {
+func (a AuthService) GetSubject(ctx *fiber.Ctx) (abac.Subject, error) {
 	userContext, ok := ctx.Locals("__auth-user-context").(*repository.UserContext)
 	if !ok {
 		return nil, errors.New("subject not found")
