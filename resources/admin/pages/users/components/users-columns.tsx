@@ -25,7 +25,7 @@ export const columns: ColumnDef<User>[] = [
 		),
 		meta: {
 			className: cn(
-				"sticky md:table-cell left-0 z-10 rounded-tl",
+				"w-[1%] sticky md:table-cell left-0 z-10 rounded-tl",
 				"bg-background transition-colors duration-200 group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted",
 			),
 		},
@@ -52,7 +52,6 @@ export const columns: ColumnDef<User>[] = [
 		accessorKey: "username",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Username" />,
 		cell: ({ row }) => <LongText className="max-w-36">{row.getValue("username")}</LongText>,
-		meta: { className: "w-36" },
 	},
 	{
 		accessorKey: "email",
@@ -62,6 +61,7 @@ export const columns: ColumnDef<User>[] = [
 	{
 		id: "actions",
 		cell: Action,
+		meta: { className: "w-[1%]" },
 	},
 ];
 
