@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"github.com/mrrizkin/pohara/modules/database/migration"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
+
+	"github.com/mrrizkin/pohara/modules/database/migration"
 )
 
 type MigrateCmd struct {

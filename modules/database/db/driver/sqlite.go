@@ -5,13 +5,13 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/database/config"
 )
 
 type SQLite struct{}
 
 func (SQLite) Connect(config *config.Config) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(config.Database.Host))
+	db, err := gorm.Open(sqlite.Open(config.Host))
 	if err != nil {
 		return nil, err
 	}

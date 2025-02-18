@@ -19,7 +19,9 @@ type MigrationHistoryRepositoryDeps struct {
 	Database *db.Database
 }
 
-func NewMigrationHistoryRepository(deps MigrationHistoryRepositoryDeps) *MigrationHistoryRepository {
+func NewMigrationHistoryRepository(
+	deps MigrationHistoryRepositoryDeps,
+) *MigrationHistoryRepository {
 	return &MigrationHistoryRepository{
 		db: deps.Database,
 	}
@@ -41,7 +43,10 @@ func (m *MigrationHistoryRepository) GetNextBatchNumber() (int, error) {
 	return lastBatch.MaxBatch + 1, nil
 }
 
-func (m *MigrationHistoryRepository) MigrationMigrate(statements []string, histories []*model.MigrationHistory) error {
+func (m *MigrationHistoryRepository) MigrationMigrate(
+	statements []string,
+	histories []*model.MigrationHistory,
+) error {
 	tx := m.db.Begin()
 	for _, statement := range statements {
 		if err := tx.Exec(statement).Error; err != nil {
@@ -62,7 +67,10 @@ func (m *MigrationHistoryRepository) MigrationMigrate(statements []string, histo
 	return nil
 }
 
-func (m *MigrationHistoryRepository) MigrationRollback(statements []string, histories []model.MigrationHistory) error {
+func (m *MigrationHistoryRepository) MigrationRollback(
+	statements []string,
+	histories []model.MigrationHistory,
+) error {
 	tx := m.db.Begin()
 	for _, statement := range statements {
 		if err := tx.Exec(statement).Error; err != nil {
@@ -94,7 +102,9 @@ func (m *MigrationHistoryRepository) MigrationRollback(statements []string, hist
 	return nil
 }
 
-func (m *MigrationHistoryRepository) GetMigrationHistory(order string) ([]model.MigrationHistory, error) {
+func (m *MigrationHistoryRepository) GetMigrationHistory(
+	order string,
+) ([]model.MigrationHistory, error) {
 	var histories []model.MigrationHistory
 	result := m.db.Order(order).Find(&histories)
 	if result.Error != nil {
@@ -104,7 +114,10 @@ func (m *MigrationHistoryRepository) GetMigrationHistory(order string) ([]model.
 	return histories, nil
 }
 
-func (m *MigrationHistoryRepository) GetMigrationHistoryByBatch(batch int, order string) ([]model.MigrationHistory, error) {
+func (m *MigrationHistoryRepository) GetMigrationHistoryByBatch(
+	batch int,
+	order string,
+) ([]model.MigrationHistory, error) {
 	var histories []model.MigrationHistory
 	result := m.db.Where("batch = ?", batch).
 		Order(order).

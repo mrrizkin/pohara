@@ -14,7 +14,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/database/config"
 	"github.com/mrrizkin/pohara/modules/database/db"
 	"github.com/mrrizkin/pohara/modules/database/migration/dialect"
 	"github.com/mrrizkin/pohara/modules/database/model"
@@ -176,7 +176,7 @@ func (m *Migrator) rollbackMigrations(histories []model.MigrationHistory) error 
 }
 
 func (m *Migrator) getDialect() (Dialect, error) {
-	switch m.config.Database.Driver {
+	switch m.config.Driver {
 	case "pgsql", "postgres", "postgresql":
 		return &dialect.PostgresDialect{}, nil
 	case "mysql", "mariadb", "maria":
@@ -184,7 +184,7 @@ func (m *Migrator) getDialect() (Dialect, error) {
 	case "sqlite", "sqlite3", "file":
 		return &dialect.SQLiteDialect{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported driver: %s", m.config.Database.Driver)
+		return nil, fmt.Errorf("unsupported driver: %s", m.config.Driver)
 	}
 }
 

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/logger"
 	"github.com/spf13/cobra"
 )
@@ -17,10 +16,10 @@ type CLI struct {
 	log     *logger.Logger
 }
 
-func New(config *config.Config, logger *logger.Logger) *CLI {
+func New(logger *logger.Logger) *CLI {
 	command := &cobra.Command{
-		Use:   config.App.Name,
-		Short: config.App.Name + " CLI",
+		Use:   "Pohara",
+		Short: "Pohara CLI",
 	}
 	return &CLI{
 		command: command,

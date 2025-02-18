@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/mrrizkin/pohara/modules/cli"
 	"go.uber.org/fx"
+
+	"github.com/mrrizkin/pohara/modules/cli"
 )
 
 type RegisterCommandsDeps struct {

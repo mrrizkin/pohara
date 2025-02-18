@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/storage/postgres/v3"
 	"github.com/gofiber/storage/sqlite3/v2"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/database/config"
 )
 
 type Database struct {
@@ -21,7 +21,7 @@ func NewDatabase(config *config.Config) *Database {
 }
 
 func (d *Database) Setup() (fiber.Storage, error) {
-	switch d.config.Database.Driver {
+	switch d.config.Driver {
 	case "pgsql":
 		return createPostgresStorage(d.config)
 	case "mysql":
@@ -29,19 +29,19 @@ func (d *Database) Setup() (fiber.Storage, error) {
 	case "sqlite":
 		return createSQLiteStorage(d.config)
 	default:
-		return nil, fmt.Errorf("unknown database driver: %s", d.config.Database.Driver)
+		return nil, fmt.Errorf("unknown database driver: %s", d.config.Driver)
 	}
 }
 
 func createPostgresStorage(cfg *config.Config) (fiber.Storage, error) {
 	config := postgres.Config{
-		Host:       cfg.Database.Host,
-		Port:       cfg.Database.Port,
-		Database:   cfg.Database.Name,
-		Username:   cfg.Database.Username,
-		Password:   cfg.Database.Password,
+		Host:       cfg.Host,
+		Port:       cfg.Port,
+		Database:   cfg.Name,
+		Username:   cfg.Username,
+		Password:   cfg.Password,
 		Table:      "sessions",
-		SSLMode:    cfg.Database.SSLmode,
+		SSLMode:    cfg.SSLmode,
 		Reset:      false,
 		GCInterval: 10 * time.Second,
 	}
@@ -51,11 +51,11 @@ func createPostgresStorage(cfg *config.Config) (fiber.Storage, error) {
 
 func createMysqlStorage(cfg *config.Config) (fiber.Storage, error) {
 	config := mysql.Config{
-		Host:       cfg.Database.Host,
-		Port:       cfg.Database.Port,
-		Database:   cfg.Database.Name,
-		Username:   cfg.Database.Username,
-		Password:   cfg.Database.Password,
+		Host:       cfg.Host,
+		Port:       cfg.Port,
+		Database:   cfg.Name,
+		Username:   cfg.Username,
+		Password:   cfg.Password,
 		Table:      "sessions",
 		Reset:      false,
 		GCInterval: 10 * time.Second,
@@ -66,7 +66,7 @@ func createMysqlStorage(cfg *config.Config) (fiber.Storage, error) {
 
 func createSQLiteStorage(cfg *config.Config) (fiber.Storage, error) {
 	config := sqlite3.Config{
-		Database:   cfg.Database.Host,
+		Database:   cfg.Host,
 		Table:      "sessions",
 		Reset:      false,
 		GCInterval: 10 * time.Second,

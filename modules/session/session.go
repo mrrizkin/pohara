@@ -9,7 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/app/config"
+	dbConfig "github.com/mrrizkin/pohara/modules/database/config"
+	"github.com/mrrizkin/pohara/modules/session/config"
 	"github.com/mrrizkin/pohara/modules/session/provider"
 )
 
@@ -25,12 +26,13 @@ type Store struct {
 func NewSession(
 	lc fx.Lifecycle,
 	config *config.Config,
+	dbConfig *dbConfig.Config,
 ) (*Store, error) {
 	var driver SessionProvider
 
-	switch config.Session.Driver {
+	switch config.Driver {
 	case "database":
-		driver = provider.NewDatabase(config)
+		driver = provider.NewDatabase(dbConfig)
 	case "file":
 		driver = provider.NewFile()
 	case "redis", "valkey", "memory":
@@ -48,10 +50,10 @@ func NewSession(
 		Store: session.New(session.Config{
 			Storage:        storage,
 			Expiration:     24 * time.Hour,
-			KeyLookup:      fmt.Sprintf("cookie:%s_session_key", config.App.Name),
-			CookieHTTPOnly: config.Session.HttpOnly,
-			CookieSecure:   config.Session.Secure,
-			CookieSameSite: config.Session.SameSite,
+			KeyLookup:      fmt.Sprintf("cookie:%s_session_key", config.CookieName),
+			CookieHTTPOnly: config.HttpOnly,
+			CookieSecure:   config.Secure,
+			CookieSameSite: config.SameSite,
 		}),
 		storage: storage,
 	}

@@ -1,14 +1,18 @@
 package database
 
 import (
+	"go.uber.org/fx"
+
+	"github.com/mrrizkin/pohara/modules/common/config"
 	"github.com/mrrizkin/pohara/modules/database/cli"
+	dbConfig "github.com/mrrizkin/pohara/modules/database/config"
 	"github.com/mrrizkin/pohara/modules/database/db"
 	"github.com/mrrizkin/pohara/modules/database/migration"
 	"github.com/mrrizkin/pohara/modules/database/repository"
-	"go.uber.org/fx"
 )
 
 var Module = fx.Module("database",
+	config.Load(&dbConfig.Config{}),
 	fx.Provide(
 		db.NewDatabase,
 		repository.NewMigrationHistoryRepository,

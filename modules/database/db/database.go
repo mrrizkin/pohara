@@ -8,7 +8,7 @@ import (
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/database/config"
 	"github.com/mrrizkin/pohara/modules/database/db/driver"
 )
 
@@ -28,7 +28,7 @@ type DatabaseDeps struct {
 
 func NewDatabase(lc fx.Lifecycle, deps DatabaseDeps) *Database {
 	var d Driver
-	switch deps.Config.Database.Driver {
+	switch deps.Config.Driver {
 	case "mysql", "mariadb", "maria":
 		d = driver.Mysql{}
 	case "pgsql", "postgres", "postgresql":

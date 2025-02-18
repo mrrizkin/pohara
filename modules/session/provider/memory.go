@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/storage/memory/v2"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/session/config"
 )
 
 type Memory struct {
@@ -19,13 +19,13 @@ func NewMemory(config *config.Config) *Memory {
 }
 
 func (m *Memory) Setup() (fiber.Storage, error) {
-	switch m.config.Session.Driver {
+	switch m.config.Driver {
 	case "memory":
 		return createMemoryStorage()
 	case "redis", "valkey":
-		return nil, fmt.Errorf("driver %s is not yet supported", m.config.Session.Driver)
+		return nil, fmt.Errorf("driver %s is not yet supported", m.config.Driver)
 	default:
-		return nil, fmt.Errorf("unknown database driver: %s", m.config.Session.Driver)
+		return nil, fmt.Errorf("unknown database driver: %s", m.config.Driver)
 	}
 }
 

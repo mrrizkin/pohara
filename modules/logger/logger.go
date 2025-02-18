@@ -10,21 +10,19 @@ import (
 	"github.com/rs/zerolog"
 	"go.uber.org/fx/fxevent"
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/mrrizkin/pohara/app/config"
 )
 
 type Logger struct {
 	core *zerolog.Logger
 }
 
-func NewLogger(config *config.Config) (*Logger, error) {
+func NewLogger(config *Config) (*Logger, error) {
 	var writers []io.Writer
 
-	if config.Log.Console {
+	if config.Console {
 		writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
-	if config.Log.File {
+	if config.File {
 		rf, err := rollingFile(config)
 		if err != nil {
 			return nil, err
@@ -33,7 +31,7 @@ func NewLogger(config *config.Config) (*Logger, error) {
 	}
 	mw := io.MultiWriter(writers...)
 
-	switch config.Log.Level {
+	switch config.Level {
 	case "panic":
 		zerolog.SetGlobalLevel(zerolog.PanicLevel)
 	case "fatal":
@@ -80,7 +78,7 @@ func (z *Logger) Fatal(msg string, args ...any) {
 	z.argsParser(z.core.Fatal(), args...).Msg(msg)
 }
 
-// LogEvent logs the given event to the provided Zerolog.
+// vent logs the given event to the provided Zerolog.
 func (z *Logger) LogEvent(event fxevent.Event) {
 	switch e := event.(type) {
 	case *fxevent.OnStartExecuting:
@@ -232,7 +230,7 @@ func (z *Logger) LogEvent(event fxevent.Event) {
 			)
 		} else {
 			z.Info(
-				"initialized custom fxevent.Logger",
+				"initialized custom fxevent.er",
 				"function", e.ConstructorName,
 			)
 		}
@@ -293,17 +291,17 @@ func (z *Logger) argsParser(event *zerolog.Event, args ...any) *zerolog.Event {
 	return event
 }
 
-func rollingFile(c *config.Config) (io.Writer, error) {
-	err := os.MkdirAll(c.Log.Dir, 0744)
+func rollingFile(c *Config) (io.Writer, error) {
+	err := os.MkdirAll(c.Dir, 0744)
 	if err != nil {
 		return nil, err
 	}
 
 	return &lumberjack.Logger{
-		Filename:   path.Join(c.Log.Dir, c.App.Name+".log"),
-		MaxBackups: c.Log.MaxBackup, // files
-		MaxSize:    c.Log.MaxSize,   // megabytes
-		MaxAge:     c.Log.MaxAge,    // days
+		Filename:   path.Join(c.Dir, c.Name+".log"),
+		MaxBackups: c.MaxBackup, // files
+		MaxSize:    c.MaxSize,   // megabytes
+		MaxAge:     c.MaxAge,    // days
 		Compress:   true,
 	}, nil
 }

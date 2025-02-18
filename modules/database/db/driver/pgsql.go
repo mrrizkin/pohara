@@ -7,7 +7,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/mrrizkin/pohara/app/config"
+	"github.com/mrrizkin/pohara/modules/database/config"
 )
 
 type Postgres struct{}
@@ -15,11 +15,11 @@ type Postgres struct{}
 func (Postgres) Connect(config *config.Config) (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
-		config.Database.Host,
-		config.Database.Port,
-		config.Database.Username,
-		config.Database.Name,
-		config.Database.Password,
-		config.Database.SSLmode,
+		config.Host,
+		config.Port,
+		config.Username,
+		config.Name,
+		config.Password,
+		config.SSLmode,
 	)))
 }

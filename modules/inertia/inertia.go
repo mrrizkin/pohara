@@ -16,7 +16,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/abac"
 	"github.com/mrrizkin/pohara/modules/abac/access"
 	"github.com/mrrizkin/pohara/modules/common/hash"
@@ -41,7 +40,7 @@ type Dependencies struct {
 	fx.In
 
 	SessionStore *session.Store
-	Config       *config.Config
+	Config       *Config
 	Vite         *vite.Vite
 	Auth         *abac.Authorization
 }
@@ -51,22 +50,22 @@ func New(deps Dependencies) (*Inertia, error) {
 		gonertia.WithFlashProvider(NewSimpleFlashProvider()),
 	}
 
-	if deps.Config.Inertia.ContainerID != "" {
-		options = append(options, gonertia.WithContainerID(deps.Config.Inertia.ContainerID))
+	if deps.Config.ContainerID != "" {
+		options = append(options, gonertia.WithContainerID(deps.Config.ContainerID))
 	}
 
-	if deps.Config.Inertia.ManifestPath != "" {
+	if deps.Config.ManifestPath != "" {
 		options = append(
 			options,
-			gonertia.WithVersion(getVersionFromManifest(deps.Config.Inertia.ManifestPath)),
+			gonertia.WithVersion(getVersionFromManifest(deps.Config.ManifestPath)),
 		)
 	}
 
-	if deps.Config.Inertia.EncryptHistory {
-		options = append(options, gonertia.WithEncryptHistory(deps.Config.Inertia.EncryptHistory))
+	if deps.Config.EncryptHistory {
+		options = append(options, gonertia.WithEncryptHistory(deps.Config.EncryptHistory))
 	}
 
-	r, err := resources.Admin.Open(deps.Config.Inertia.EntryPath)
+	r, err := resources.Admin.Open(deps.Config.EntryPath)
 	if err != nil {
 		return nil, err
 	}
