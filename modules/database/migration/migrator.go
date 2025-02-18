@@ -44,7 +44,7 @@ func NewMigrator(deps MigratorDeps) *Migrator {
 		panic(fmt.Sprintf("failed to migrate the __migration_history__: %v", err))
 	}
 
-	tmpl, err := template.New("template").ParseFS(templateFS, "template/*.go.tmpl")
+	tmpl, err := template.ParseFS(templateFS, "template/*.go.tmpl")
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse template: %v", err))
 	}
@@ -99,7 +99,9 @@ func (m *Migrator) Migrate() error {
 	return nil
 }
 
-func (m *Migrator) getPendingMigrations(executedMigrations map[string]model.MigrationHistory) map[string]Migration {
+func (m *Migrator) getPendingMigrations(
+	executedMigrations map[string]model.MigrationHistory,
+) map[string]Migration {
 	pendingMigrations := make(map[string]Migration)
 	for _, migration := range m.migrations {
 		id := migration.ID()
@@ -110,7 +112,11 @@ func (m *Migrator) getPendingMigrations(executedMigrations map[string]model.Migr
 	return pendingMigrations
 }
 
-func (m *Migrator) applyMigrations(schema *Schema, migrations map[string]Migration, batchNumber int) []*model.MigrationHistory {
+func (m *Migrator) applyMigrations(
+	schema *Schema,
+	migrations map[string]Migration,
+	batchNumber int,
+) []*model.MigrationHistory {
 	var history []*model.MigrationHistory
 	for id, migration := range migrations {
 		migration.Up(schema)
@@ -234,7 +240,10 @@ func (m *Migrator) calculateColumnWidths(histories []model.MigrationHistory) (in
 	return maxMigrationLen, maxBatchLen, maxExecutedLen
 }
 
-func (m *Migrator) printMigrationStatusTable(executedMigrations map[string]model.MigrationHistory, maxMigrationLen, maxBatchLen, maxExecutedLen int) {
+func (m *Migrator) printMigrationStatusTable(
+	executedMigrations map[string]model.MigrationHistory,
+	maxMigrationLen, maxBatchLen, maxExecutedLen int,
+) {
 	fmt.Println("\nMigration Status:")
 	fmt.Printf(
 		"+-%s-+-%s-+-%s-+\n",

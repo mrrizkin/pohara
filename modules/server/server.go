@@ -1,7 +1,10 @@
 package server
 
 import (
+	"embed"
 	"fmt"
+	"html/template"
+	"strings"
 	"time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -22,6 +25,9 @@ import (
 	"github.com/mrrizkin/pohara/modules/server/cli"
 	"github.com/mrrizkin/pohara/modules/session"
 )
+
+//go:embed templates/swagger.html
+var swaggerTemplates embed.FS
 
 type Dependencies struct {
 	fx.In
@@ -114,30 +120,6 @@ func SetupRouter(deps SetupRouterDependecies) *fiber.App {
 	return deps.App
 }
 
-// func StartServer(
-// 	lx fx.Lifecycle,
-// 	app *fiber.App,
-// 	config *config.Config,
-// 	log *logger.Logger,
-// ) error {
-// 	lx.Append(fx.Hook{
-// 		OnStart: func(context.Context) error {
-// 			go func() {
-// 				if err := app.Listen(fmt.Sprintf(":%d", config.App.Port)); err != nil {
-// 					log.Fatal("failed to start server", "error", err)
-// 				}
-// 			}()
-// 			log.Info("server started", "app_name", config.App.Name, "port", config.App.Port)
-// 			return nil
-// 		},
-// 		OnStop: func(context.Context) error {
-// 			return app.Shutdown()
-// 		},
-// 	})
-
-// 	return nil
-// }
-
 func swagger(config *config.Config) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 
@@ -145,21 +127,16 @@ func swagger(config *config.Config) func(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).Send(nil)
 		}
 
-		html := fmt.Sprintf(`<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Swagger API Reference - Scalar</title>
-        <link rel="icon" type="image/svg+xml" href="https://docs.scalar.com/favicon.svg">
-        <link rel="icon" type="image/png" href="https://docs.scalar.com/favicon.png">
-    </head>
-    <body>
-        <script id="api-reference" data-url="%s"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-    </body>
-</html>`, config.SwaggerPath)
+		tmpl, _ := template.ParseFS(swaggerTemplates, "templates/swagger.html")
+		data := struct {
+			SwaggerPath string
+		}{
+			SwaggerPath: config.SwaggerPath,
+		}
 
-		return c.Type("html").Send([]byte(html))
+		var html strings.Builder
+		tmpl.Execute(&html, data)
+
+		return c.Type("html").Send([]byte(html.String()))
 	}
 }
