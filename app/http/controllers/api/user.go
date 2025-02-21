@@ -39,7 +39,7 @@ type UserControllerDependencies struct {
 
 func NewUserController(deps UserControllerDependencies) *UserController {
 	return &UserController{
-		log:       deps.Logger.Scope("user_controller"),
+		log:       deps.Logger.System().Scope("user_controller"),
 		validator: deps.Validator,
 		hashing:   deps.Hashing,
 		auth:      deps.Authorization,

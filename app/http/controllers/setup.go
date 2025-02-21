@@ -37,7 +37,7 @@ type SetupControllerDependencies struct {
 
 func NewSetupController(deps SetupControllerDependencies) *SetupController {
 	return &SetupController{
-		log:       deps.Logger.Scope("setup_controller"),
+		log:       deps.Logger.System().Scope("setup_controller"),
 		inertia:   deps.Inertia,
 		validator: deps.Validator,
 		hash:      deps.Hashing,

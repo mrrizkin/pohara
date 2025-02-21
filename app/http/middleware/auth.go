@@ -32,7 +32,7 @@ func NewAuthMiddleware(deps AuthMiddlewareDependencies) *AuthMiddleware {
 		authService:  deps.AuthService,
 		inertia:      deps.Inertia,
 		sessionStore: deps.SessionStore,
-		log:          deps.Logger.Scope("auth_middleware"),
+		log:          deps.Logger.Auth().Scope("auth_middleware"),
 	}
 }
 

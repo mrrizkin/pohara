@@ -31,7 +31,7 @@ type UserRepositoryDependencies struct {
 
 func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 	return &UserRepository{
-		log:       deps.Logger.Scope("user_repository"),
+		log:       deps.Logger.System().Scope("user_repository"),
 		validator: deps.Validator,
 		hashing:   deps.Hashing,
 		db:        deps.Database,

@@ -36,7 +36,7 @@ func NewAuthController(deps AuthControllerDependencies) *AuthController {
 		inertia:  deps.Inertia,
 		auth:     deps.Authorization,
 		roleRepo: deps.RoleRepo,
-		log:      deps.Logger.Scope("system_setting_auth_controller"),
+		log:      deps.Logger.System().Scope("system_setting_auth_controller"),
 	}
 }
 

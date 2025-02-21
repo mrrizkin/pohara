@@ -44,7 +44,7 @@ type AuthControllerDependencies struct {
 
 func NewAuthController(deps AuthControllerDependencies) *AuthController {
 	return &AuthController{
-		log:       deps.Logger.Scope("auth_controller"),
+		log:       deps.Logger.Auth().Scope("auth_controller"),
 		inertia:   deps.Inertia,
 		validator: deps.Validator,
 		hash:      deps.Hashing,

@@ -62,6 +62,34 @@ func (z *Logger) Scope(scope string) *Logger {
 	}
 }
 
+func (z *Logger) System() *Logger {
+	zlog := z.core.With().Str("log_type", "system").Logger()
+	return &Logger{
+		core: &zlog,
+	}
+}
+
+func (z *Logger) Request() *Logger {
+	zlog := z.core.With().Str("log_type", "request").Logger()
+	return &Logger{
+		core: &zlog,
+	}
+}
+
+func (z *Logger) Auth() *Logger {
+	zlog := z.core.With().Str("log_type", "auth").Logger()
+	return &Logger{
+		core: &zlog,
+	}
+}
+
+func (z *Logger) Job() *Logger {
+	zlog := z.core.With().Str("log_type", "job").Logger()
+	return &Logger{
+		core: &zlog,
+	}
+}
+
 func (z *Logger) Info(msg string, args ...any) {
 	z.argsParser(z.core.Info(), args...).Msg(msg)
 }

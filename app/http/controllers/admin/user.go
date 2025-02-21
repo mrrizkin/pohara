@@ -35,7 +35,7 @@ func NewUserController(deps UserControllerDependencies) *UserController {
 	return &UserController{
 		inertia:  deps.Inertia,
 		auth:     deps.Authorization,
-		log:      deps.Logger.Scope("admin_user_controller"),
+		log:      deps.Logger.System().Scope("admin_user_controller"),
 		userRepo: deps.UserRepository,
 	}
 }

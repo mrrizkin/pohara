@@ -58,7 +58,7 @@ func NewServer(deps Dependencies) (*fiber.App, error) {
 
 	app.Static("/", "public")
 	app.Use(fiberzerolog.New(fiberzerolog.Config{
-		Logger: deps.Logger.GetLogger().(*zerolog.Logger),
+		Logger: deps.Logger.Request().GetLogger().(*zerolog.Logger),
 	}))
 	app.Use(requestid.New())
 	app.Use(recover.New(recover.Config{
