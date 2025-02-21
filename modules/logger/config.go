@@ -1,7 +1,7 @@
 package logger
 
 type Config struct {
-	Name      string `env:"LOG_NAME,default=application.log"`
+	Name      string `env:"LOG_NAME,default=application"`
 	Level     string `env:"LOG_LEVEL,default=debug"`
 	Console   bool   `env:"LOG_CONSOLE,default=true"`
 	File      bool   `env:"LOG_FILE,default=true"`

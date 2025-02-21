@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"github.com/dgraph-io/ristretto/v2"
-	"github.com/mrrizkin/pohara/app/config"
 	"go.uber.org/fx"
 )
 
 type Cache struct {
 	core   *ristretto.Cache[string, any]
-	config *config.Config
+	config *Config
 }
 
 type CacheDeps struct {
 	fx.In
 
-	Config *config.Config
+	Config *Config
 }
 
 func NewCache(lc fx.Lifecycle, deps CacheDeps) (*Cache, error) {

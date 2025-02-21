@@ -1,9 +1,5 @@
 package config
 
-import (
-	"time"
-)
-
 type Config struct {
 	App struct {
 		Name    string `env:"APP_NAME,required"`
@@ -34,7 +30,6 @@ type Config struct {
 
 	StoragePath string `env:"STORAGE_PATH,default=storage"`
 	SwaggerPath string `env:"SWAGGER_PATH,default=/docs/swagger.json"`
-	CacheTTL    int    `env:"CACHE_TTL,default=300"`
 }
 
 func (c *Config) IsProduction() bool {
@@ -43,8 +38,4 @@ func (c *Config) IsProduction() bool {
 
 func (c *Config) IsCacheView() bool {
 	return c.View.Cache && c.IsProduction()
-}
-
-func (c *Config) CacheTTLSecond() time.Duration {
-	return time.Duration(c.CacheTTL) * time.Second
 }
