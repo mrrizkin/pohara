@@ -22,20 +22,10 @@ type Config struct {
 		Expiration int    `env:"CSRF_EXPIRATION,default=3600"`
 	}
 
-	View struct {
-		Directory string `env:"VIEW_DIRECTORY,default=/views"`
-		Extension string `env:"VIEW_EXTENSION,default=.html"`
-		Cache     bool   `env:"VIEW_CACHE,default=true"`
-	}
-
 	StoragePath string `env:"STORAGE_PATH,default=storage"`
 	SwaggerPath string `env:"SWAGGER_PATH,default=/docs/swagger.json"`
 }
 
 func (c *Config) IsProduction() bool {
 	return c.App.Env == "production" || c.App.Env == "prod"
-}
-
-func (c *Config) IsCacheView() bool {
-	return c.View.Cache && c.IsProduction()
 }
