@@ -25,7 +25,7 @@ type SchedulerDeps struct {
 func NewScheduler(lc fx.Lifecycle, deps SchedulerDeps) *Scheduler {
 	return &Scheduler{
 		core: cron.New(),
-		log:  deps.Logger,
+		log:  deps.Logger.Job(),
 	}
 }
 
@@ -44,8 +44,16 @@ func startScheduler(lc fx.Lifecycle, scheduler *Scheduler) {
 }
 
 // Add schedules a new task with the given spec
-func (s *Scheduler) Add(spec string, cmd func()) error {
-	_, err := s.core.AddFunc(spec, cmd)
+func (s *Scheduler) Add(spec, name string, cmd func() error) error {
+	_, err := s.core.AddFunc(spec, func() {
+		s.log.Info("start execute job", "name", name)
+		if err := cmd(); err != nil {
+			s.log.Error("failed execute job", "name", name, "err", err)
+		} else {
+			s.log.Error("success execute job", "name", name)
+		}
+		s.log.Info("finish execute job", "name", name)
+	})
 	return err
 }
 
