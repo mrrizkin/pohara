@@ -19,10 +19,11 @@ import (
 	"github.com/rs/zerolog"
 	"go.uber.org/fx"
 
-	"github.com/mrrizkin/pohara/app/config"
+	sysConfig "github.com/mrrizkin/pohara/modules/common/config"
 	"github.com/mrrizkin/pohara/modules/common/debug"
 	"github.com/mrrizkin/pohara/modules/logger"
 	"github.com/mrrizkin/pohara/modules/server/cli"
+	"github.com/mrrizkin/pohara/modules/server/config"
 	"github.com/mrrizkin/pohara/modules/session"
 )
 
@@ -37,6 +38,7 @@ type Dependencies struct {
 }
 
 var Module = fx.Module("server",
+	sysConfig.Load(&config.Config{}),
 	fx.Provide(NewServer,
 		cli.NewStartServerCmd,
 		cli.RegisterCommands,
@@ -46,8 +48,8 @@ var Module = fx.Module("server",
 
 func NewServer(deps Dependencies) (*fiber.App, error) {
 	app := fiber.New(fiber.Config{
-		Prefork:               deps.Config.App.Prefork,
-		AppName:               deps.Config.App.Name,
+		Prefork:               deps.Config.Prefork,
+		AppName:               deps.Config.Name,
 		DisableStartupMessage: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(!deps.Config.IsProduction(), c, err)

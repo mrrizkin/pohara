@@ -85,18 +85,18 @@ templ Header(config *config.Config, path string) {
 						</li>
 					}
 				}
-				if config.Site.NavButton.Enable {
+				if config.NavButton.Enable {
 					<div class="block md:hidden">
-						<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.Site.NavButton.Link) }>
-							{ config.Site.NavButton.Label }
+						<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.NavButton.Link) }>
+							{ config.NavButton.Label }
 						</a>
 					</div>
 				}
 			</ul>
-			if config.Site.NavButton.Enable {
+			if config.NavButton.Enable {
 				<div class="order-1 ml-auto hidden items-center md:order-2 md:ml-0 md:flex md:min-w-[150px] lg:min-w-[200px]">
-					<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.Site.NavButton.Link) }>
-						{ config.Site.NavButton.Label }
+					<a class="btn btn-primary z-0 ml-auto py-[14px]" href={ templ.SafeURL(config.NavButton.Link) }>
+						{ config.NavButton.Label }
 					</a>
 				</div>
 			}

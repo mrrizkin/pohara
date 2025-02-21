@@ -21,7 +21,7 @@ config := fiberCtx.Locals("config").(*config.Config)
 				<h1 class="text-center font-normal">Contact Us</h1>
 				<div class="section row pb-0">
 					<div class="col-12 md:col-6 lg:col-7">
-						<form class="contact-form" method="POST" action={ templ.SafeURL(config.Site.Params.ContactFormAction) }>
+						<form class="contact-form" method="POST" action={ templ.SafeURL(config.Params.ContactFormAction) }>
 							<div class="mb-3">
 								<input
 									class="form-input w-full rounded"

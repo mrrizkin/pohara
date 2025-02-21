@@ -27,10 +27,15 @@ templ Footer(config *config.Config) {
 				// social icons
 				<div class="md-12 sm:col-6 lg:col-3">
 					<a href="/" aria-label="Bigspring">
-						<img src={ config.Site.Logo } width={ fmt.Sprintf("%d", config.Site.LogoWidth) } height={ fmt.Sprintf("%d", config.Site.LogoHeight) } alt={ config.Site.LogoText }/>
+						<img
+							src={ config.Logo }
+							width={ fmt.Sprintf("%d", config.LogoWidth) }
+							height={ fmt.Sprintf("%d", config.LogoHeight) }
+							alt={ config.LogoText }
+						/>
 					</a>
 					<p class="mt-3 mb-6">
-						{ config.Site.Params.FooterContent }
+						{ config.Params.FooterContent }
 					</p>
 					// <Social source={social} className="social-icons mb-8" />
 				</div>
@@ -38,7 +43,7 @@ templ Footer(config *config.Config) {
 			// copyright
 			<div class="border-t border-border py-6">
 				<p class="text-sm text-center">
-					{ config.Site.Params.Copyright }
+					{ config.Params.Copyright }
 				</p>
 			</div>
 		</div>

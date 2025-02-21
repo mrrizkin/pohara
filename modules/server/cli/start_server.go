@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mrrizkin/pohara/app/config"
 	"github.com/mrrizkin/pohara/modules/logger"
+	"github.com/mrrizkin/pohara/modules/server/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
@@ -47,12 +47,12 @@ func (c *StartServerCmd) Run(cmd *cobra.Command, args []string) {
 	c.lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
-				if err := c.app.Listen(fmt.Sprintf(":%d", c.config.App.Port)); err != nil {
+				if err := c.app.Listen(fmt.Sprintf(":%d", c.config.Port)); err != nil {
 					c.log.Fatal("failed to start server", "error", err)
 					ctx.Done()
 				}
 			}()
-			c.log.Info("server started", "app_name", c.config.App.Name, "port", c.config.App.Port)
+			c.log.Info("server started", "app_name", c.config.Name, "port", c.config.Port)
 			return nil
 		},
 		OnStop: func(context.Context) error {

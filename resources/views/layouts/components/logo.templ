@@ -17,24 +17,24 @@ css logo(width, height int) {
 
 templ Logo(props LogoProps) {
 	<a href="/" class="navbar-brand block md:w-[150px] lg:w-auto">
-		if len(props.Src) > 0 || len(props.Config.Site.Logo) > 0 {
+		if len(props.Src) > 0 || len(props.Config.Logo) > 0 {
 			{{
-	src := props.Config.Site.Logo
+	src := props.Config.Logo
 	if len(props.Src) > 0 {
 		src = props.Src
 	}
 			}}
 			<img
-				width={ fmt.Sprintf("%d", props.Config.Site.LogoWidth*2) }
-				height={ fmt.Sprintf("%d", props.Config.Site.LogoHeight*2) }
+				width={ fmt.Sprintf("%d", props.Config.LogoWidth*2) }
+				height={ fmt.Sprintf("%d", props.Config.LogoHeight*2) }
 				src={ src }
-				alt={ props.Config.Site.Title }
-				class={ logo(props.Config.Site.LogoWidth, props.Config.Site.LogoHeight) }
+				alt={ props.Config.Title }
+				class={ logo(props.Config.LogoWidth, props.Config.LogoHeight) }
 			/>
-		} else if len(props.Config.Site.LogoText) > 0 {
-			{ props.Config.Site.LogoText }
+		} else if len(props.Config.LogoText) > 0 {
+			{ props.Config.LogoText }
 		} else {
-			{ props.Config.Site.Title }
+			{ props.Config.Title }
 		}
 	</a>
 }

@@ -1,31 +1,39 @@
 package config
 
 type Config struct {
-	App struct {
-		Name    string `env:"APP_NAME,required"`
-		Env     string `env:"APP_ENV,required"`
-		URL     string `env:"APP_URL,required"`
-		Port    int    `env:"APP_PORT,required"`
-		Prefork bool   `env:"APP_PREFORK,default=false"`
-		Debug   bool   `env:"APP_DEBUG,default=false"`
+	Title         string `env:"SITE_TITLE"`
+	BaseURL       string `env:"SITE_BASE_URL"`
+	BasePath      string `env:"SITE_BASE_PATH"`
+	TrailingSlash bool   `env:"SITE_TRAILING_SLASH"`
+	Favicon       string `env:"SITE_FAVICON"`
+	Logo          string `env:"SITE_LOGO"`
+	LogoWidth     int    `env:"SITE_LOGO_WIDTH"`
+	LogoHeight    int    `env:"SITE_LOGO_HEIGHT"`
+	LogoText      string `env:"SITE_LOGO_TEXT"`
+
+	Settings struct {
+		Pagination    int `env:"SITE_SETTINGS_PAGINATION"`
+		SummaryLength int `env:"SITE_SETTINGS_SUMMARY_LENGTH"`
 	}
 
-	Site Site
+	NavButton struct {
+		Enable bool   `env:"SITE_NAV_BUTTON_ENABLE"`
+		Label  string `env:"SITE_NAV_BUTTON_LABEL"`
+		Link   string `env:"SITE_NAV_BUTTON_LINK"`
+	}
 
-	CSRF struct {
-		Key        string `env:"CSRF_KEY,default=X-CSRF-Token"`
-		CookieName string `env:"CSRF_COOKIE_NAME,default=fiber_csrf_token"`
-		SameSite   string `env:"CSRF_SAME_SITE,default=Lax"`
-		Secure     bool   `env:"CSRF_SECURE,default=false"`
-		Session    bool   `env:"CSRF_SESSION,default=true"`
-		HttpOnly   bool   `env:"CSRF_HTTP_ONLY,default=true"`
-		Expiration int    `env:"CSRF_EXPIRATION,default=3600"`
+	Params struct {
+		ContactFormAction string `env:"SITE_PARAMS_CONTACT_FORM_ACTION"`
+		TagManagerID      string `env:"SITE_PARAMS_TAG_MANAGER_ID"`
+		FooterContent     string `env:"SITE_PARAMS_FOOTER_CONTENT"`
+		Copyright         string `env:"SITE_PARAMS_COPYRIGHT"`
+	}
+
+	Metadata struct {
+		MetaAuthor      string `env:"SITE_METADATA_META_AUTHOR"`
+		MetaImage       string `env:"SITE_METADATA_META_IMAGE"`
+		MetaDescription string `env:"SITE_METADATA_META_DESCRIPTION"`
 	}
 
 	StoragePath string `env:"STORAGE_PATH,default=storage"`
-	SwaggerPath string `env:"SWAGGER_PATH,default=/docs/swagger.json"`
-}
-
-func (c *Config) IsProduction() bool {
-	return c.App.Env == "production" || c.App.Env == "prod"
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/mrrizkin/pohara/app/config"
 	tmpl "github.com/mrrizkin/pohara/modules/templ"
 	"github.com/mrrizkin/pohara/modules/vite"
-	"github.com/mrrizkin/pohara/resources/views/layouts/components"
 	"github.com/mrrizkin/pohara/resources/views/layouts/partials"
 )
 
@@ -27,22 +26,22 @@ fiberCtx := ctx.Value(tmpl.FiberContextKey).(*fiber.Ctx)
 config := fiberCtx.Locals("config").(*config.Config)
 vite := fiberCtx.Locals("vite").(*vite.Vite)
 
-title := config.Site.Title
+title := config.Title
 if len(props.MetaTitle) > 0 {
 	title = props.MetaTitle
 } else if len(props.Title) > 0 {
 	title = props.Title
 }
 
-description := config.Site.Metadata.MetaDescription
+description := config.Metadata.MetaDescription
 if len(props.Description) > 0 {
 	description = props.Description
 }
 
-urlPath, _ := url.JoinPath(config.Site.BaseURL, fiberCtx.Path())
-image, _ := url.JoinPath(config.Site.BaseURL, config.Site.Metadata.MetaImage)
+urlPath, _ := url.JoinPath(config.BaseURL, fiberCtx.Path())
+image, _ := url.JoinPath(config.BaseURL, config.Metadata.MetaImage)
 if len(props.Image) > 0 {
-	propImage, _ := url.JoinPath(config.Site.BaseURL, config.Site.Metadata.MetaImage)
+	propImage, _ := url.JoinPath(config.BaseURL, config.Metadata.MetaImage)
 	image = propImage
 }
 	}}
@@ -50,7 +49,7 @@ if len(props.Image) > 0 {
 	<html lang="en">
 		<head>
 			// favicon
-			<link rel="shortcut icon" href={ config.Site.Favicon }/>
+			<link rel="shortcut icon" href={ config.Favicon }/>
 			// theme meta
 			<meta name="theme-name" content="bigspring-light-astro"/>
 			<meta name="msapplication-TileColor" content="#000000"/>
@@ -77,7 +76,7 @@ if len(props.Image) > 0 {
 			// meta-description
 			<meta name="description" content={ description }/>
 			// author from config.json
-			<meta name="author" content={ config.Site.Metadata.MetaAuthor }/>
+			<meta name="author" content={ config.Metadata.MetaAuthor }/>
 			// og-title
 			<meta property="og:title" content={ title }/>
 			// og-description
@@ -101,7 +100,6 @@ if len(props.Image) > 0 {
 			}
 		</head>
 		<body>
-			@components.TwSizeIndicator(config)
 			@partials.Header(config, fiberCtx.Path())
 			<main id="main-content">
 				{ children... }
