@@ -16,7 +16,7 @@ interface DataTableProps<T> {
 
 export function DataTable<T>(props: DataTableProps<T>) {
 	return (
-		<div className="rounded-md border">
+		<div className="border-y">
 			<Table>
 				<TableHeader>
 					{props.table.getHeaderGroups().map((headerGroup) => (

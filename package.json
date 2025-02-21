@@ -16,6 +16,8 @@
 		"generate:swagger": "swag init -g ./main.go -ot json -o ./public/docs --pd --parseInternal"
 	},
 	"dependencies": {
+		"@dicebear/collection": "^9.2.2",
+		"@dicebear/core": "^9.2.2",
 		"@hookform/resolvers": "^3.10.0",
 		"@inertiajs/react": "^2.0.3",
 		"@radix-ui/react-alert-dialog": "^1.1.6",

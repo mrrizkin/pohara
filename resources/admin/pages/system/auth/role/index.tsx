@@ -11,9 +11,12 @@ import {
 	getSortedRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
+import { SearchIcon } from "lucide-react";
 import * as React from "react";
 
 import { PaginationResult } from "@/types/pagination";
+
+import { Input } from "@/components/ui/input";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated";
 import { Header } from "@/components/layout/header";
@@ -21,11 +24,11 @@ import { Main } from "@/components/layout/main";
 
 import { DataTablePagination } from "@/components/data-table/pagination";
 import { DataTable } from "@/components/data-table/table";
+import { DataTableToolbar } from "@/components/data-table/toolbar";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
 
-import { DataTableToolbar } from "./components/data-table-toolbar";
 import { columns } from "./components/roles-columns";
 import { RolesDialogs } from "./components/roles-dialogs";
 import { RolesPrimaryButtons } from "./components/roles-primary-buttons";
@@ -88,7 +91,17 @@ export default function Roles(props: RolePageProps) {
 					</div>
 					<div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
 						<div className="space-y-4">
-							<DataTableToolbar table={table} />
+							<DataTableToolbar table={table}>
+								<div className="relative">
+									<SearchIcon className="text-muted-foreground absolute left-2 top-2 h-4 w-4" />
+									<Input
+										placeholder="Search by name..."
+										value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+										onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+										className="h-8 w-[150px]  pl-8 lg:w-[250px]"
+									/>
+								</div>
+							</DataTableToolbar>
 							<DataTable table={table} columnsLength={columns.length} />
 							<DataTablePagination table={table} />
 						</div>

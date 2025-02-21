@@ -25,7 +25,7 @@ export const columns: ColumnDef<Role>[] = [
 		),
 		meta: {
 			className: cn(
-				"w-[1%] sticky md:table-cell left-0 z-10 rounded-tl",
+				"w-[1%] sticky md:table-cell left-0 z-10",
 				"bg-background transition-colors duration-200 group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted",
 			),
 		},
@@ -56,6 +56,7 @@ export const columns: ColumnDef<Role>[] = [
 	{
 		id: "actions",
 		cell: Action,
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Edit" />,
 		meta: { className: "w-[1%]" },
 	},
 ];
