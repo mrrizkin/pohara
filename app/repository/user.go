@@ -98,7 +98,7 @@ func (r *UserRepository) Find(
 	var users []model.MUser
 	query := r.db.Model(&users)
 	if search.Valid {
-		query.Where("name ILIKE ?", "%"+search.String+"%")
+		query.Where("name LIKE ?", "%"+search.String+"%")
 	}
 	return QueryPaginate(query, users, paginateParams)
 }

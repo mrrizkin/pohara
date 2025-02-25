@@ -1,6 +1,7 @@
 import { Head } from "@inertiajs/react";
 import {
 	ColumnFiltersState,
+	PaginationState,
 	SortingState,
 	VisibilityState,
 	getCoreRowModel,
@@ -11,12 +12,12 @@ import {
 	getSortedRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
-import { SearchIcon } from "lucide-react";
+import { Loader, SearchIcon } from "lucide-react";
 import * as React from "react";
 
-import { PaginationResult } from "@/types/pagination";
+import { queryTable, request } from "@/lib/request";
 
-import { Input } from "@/components/ui/input";
+import { GeneralResponse, PaginationResult } from "@/types/pagination";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated";
 import { Header } from "@/components/layout/header";
@@ -25,6 +26,7 @@ import { Main } from "@/components/layout/main";
 import { DataTablePagination } from "@/components/data-table/pagination";
 import { DataTable } from "@/components/data-table/table";
 import { DataTableToolbar } from "@/components/data-table/toolbar";
+import { DebouncedInput } from "@/components/debounce-input";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -33,34 +35,44 @@ import { columns } from "./components/roles-columns";
 import { RolesDialogs } from "./components/roles-dialogs";
 import { RolesPrimaryButtons } from "./components/roles-primary-buttons";
 import RolesProvider from "./context/roles-context";
-import { Role, roleListSchema } from "./data/schema";
+import { Role } from "./data/schema";
 
-interface RolePageProps {
-	roles: PaginationResult<Role>;
+async function listRole(params: any) {
+	const response = await request.get<GeneralResponse<PaginationResult<Role>>>("/_/system/auth/role/datatable", { params });
+	return response.data.data;
 }
 
-export default function Roles(props: RolePageProps) {
-	// Parse role list
-	const [data] = React.useState(roleListSchema.parse(props.roles.data));
+export default function Roles() {
 	const [rowSelection, setRowSelection] = React.useState({});
-	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+	const [visibility, setVisibility] = React.useState<VisibilityState>({});
+	const [filters, setFilters] = React.useState<ColumnFiltersState>([]);
 	const [sorting, setSorting] = React.useState<SortingState>([]);
+	const [pagination, setPagination] = React.useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+
+	const { data: response, isFetching } = queryTable(["datatable-general-role-list"], listRole, { filters, sorting, pagination });
 
 	const table = useReactTable({
-		data,
+		data: response?.data || [],
 		columns,
+		pageCount: response?.total_page || 0,
 		state: {
 			sorting,
-			columnVisibility,
 			rowSelection,
-			columnFilters,
+			columnFilters: filters,
+			columnVisibility: visibility,
 		},
+		manualPagination: true,
+		manualSorting: true,
+		manualFiltering: true,
 		enableRowSelection: true,
+		onPaginationChange: setPagination,
 		onRowSelectionChange: setRowSelection,
 		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
-		onColumnVisibilityChange: setColumnVisibility,
+		onColumnFiltersChange: setFilters,
+		onColumnVisibilityChange: setVisibility,
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
@@ -84,7 +96,10 @@ export default function Roles(props: RolePageProps) {
 				<Main>
 					<div className="mb-2 flex flex-wrap items-center justify-between space-y-2">
 						<div>
-							<h2 className="text-2xl font-bold tracking-tight">Role List</h2>
+							<h2 className="text-2xl font-bold tracking-tight">
+								Role List
+								{isFetching && <Loader className="ml-2 inline-flex h-4 w-4 animate-spin" />}
+							</h2>
 							<p className="text-muted-foreground">Manage your roles and their policy here.</p>
 						</div>
 						<RolesPrimaryButtons />
@@ -94,10 +109,10 @@ export default function Roles(props: RolePageProps) {
 							<DataTableToolbar table={table}>
 								<div className="relative">
 									<SearchIcon className="text-muted-foreground absolute left-2 top-2 h-4 w-4" />
-									<Input
+									<DebouncedInput
 										placeholder="Search by name..."
 										value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-										onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+										onChange={(value) => table.getColumn("name")?.setFilterValue(value)}
 										className="h-8 w-[150px]  pl-8 lg:w-[250px]"
 									/>
 								</div>

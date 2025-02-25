@@ -54,7 +54,7 @@ func QueryPaginate[T any](
 	totalPage := sql.Int64Null()
 	if offset.Valid && params.Limit.Valid && params.Limit.Int64 != 0 {
 		totalPage.Valid = true
-		totalPage.Int64 = int64(math.Ceil(float64(total)/float64(params.Limit.Int64))) + 1
+		totalPage.Int64 = int64(math.Ceil(float64(total) / float64(params.Limit.Int64)))
 	}
 
 	result = &PaginationResult[T]{

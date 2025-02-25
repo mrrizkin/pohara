@@ -10,11 +10,10 @@ type Pagination struct {
 }
 
 type GeneralResponse[T any] struct {
-	Status     string      `json:"status"`
-	Message    string      `json:"message"`
-	Detail     string      `json:"detail,omitempty"`
-	Data       T           `json:"data,omitempty"`
-	Pagination *Pagination `json:"pagination,omitempty"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Detail  string `json:"detail,omitempty"`
+	Data    T      `json:"data,omitempty"`
 }
 
 func Success[T any](msg string, data T) GeneralResponse[T] {
@@ -32,15 +31,6 @@ func SuccessMsg(msg string) GeneralResponse[any] {
 	}
 }
 
-func SuccessPaginate[T any](msg string, data T, pagination *Pagination) GeneralResponse[T] {
-	return GeneralResponse[T]{
-		Status:     "success",
-		Message:    msg,
-		Data:       data,
-		Pagination: pagination,
-	}
-}
-
 func Error[T any](msg string, detail string, data T) GeneralResponse[T] {
 	return GeneralResponse[T]{
 		Status:  "error",
@@ -55,20 +45,5 @@ func ErrorMsg(msg string, detail string) GeneralResponse[any] {
 		Status:  "error",
 		Message: msg,
 		Detail:  detail,
-	}
-}
-
-func ErrorPagination[T any](
-	msg string,
-	detail string,
-	data T,
-	pagination *Pagination,
-) GeneralResponse[T] {
-	return GeneralResponse[T]{
-		Status:     "error",
-		Message:    msg,
-		Detail:     detail,
-		Data:       data,
-		Pagination: pagination,
 	}
 }

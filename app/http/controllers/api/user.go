@@ -166,17 +166,7 @@ func (c *UserController) UserFind(ctx *fiber.Ctx) error {
 		)
 	}
 
-	return ctx.JSON(
-		response.SuccessPaginate("user retrieved successfully",
-			result.Data,
-			&response.Pagination{
-				Total:     result.Total,
-				TotalPage: result.TotalPage,
-				Page:      result.Page,
-				Limit:     result.Limit,
-			},
-		),
-	)
+	return ctx.JSON(response.Success("user retrieved successfully", result))
 }
 
 // UserFindByID godoc

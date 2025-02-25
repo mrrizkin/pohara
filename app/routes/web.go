@@ -64,6 +64,7 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 
 		user := authenticated.Group("/users").Name("user.")
 		user.Get("/", deps.User.Index).Name("index")
+		user.Get("/datatable", deps.User.Datatable).Name("datatable")
 
 		setting := authenticated.Group("/settings").Name("setting.")
 		setting.Get("/", deps.Setting.ProfilePage).Name("index")
@@ -85,6 +86,7 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 
 		authSetting := system.Group("/auth").Name("auth.")
 		authSetting.Get("/role", deps.SettingSystemAuth.Role).Name("role")
+		authSetting.Get("/role/datatable", deps.SettingSystemAuth.RoleDatatable).Name("role")
 		authSetting.Get("/policy", deps.SettingSystemAuth.Policy).Name("policy")
 
 		r.Get("/_/*", func(ctx *fiber.Ctx) error {

@@ -1,5 +1,6 @@
 import { createInertiaApp } from "@inertiajs/react";
-import { Suspense, lazy } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 
@@ -19,19 +20,25 @@ registerSW({
 	},
 });
 
+const queryClient = new QueryClient();
+
 createInertiaApp({
 	resolve: function (name) {
 		const pages = import.meta.glob("./pages/**/*.tsx");
 		const page = pages[`./pages/${name}.tsx`];
-		return page ? lazy(() => page() as Promise<{ default: () => JSX.Element }>) : pages["./pages/error/not-found.tsx"]();
+		return page ? React.lazy(() => page() as Promise<{ default: () => JSX.Element }>) : pages["./pages/error/not-found.tsx"]();
 	},
 	setup({ el, App, props }) {
 		createRoot(el).render(
-			<ErrorBoundary>
-				<Suspense fallback={<Loading />}>
-					<App {...props} />
-				</Suspense>
-			</ErrorBoundary>,
+			<React.StrictMode>
+				<ErrorBoundary>
+					<QueryClientProvider client={queryClient}>
+						<React.Suspense fallback={<Loading />}>
+							<App {...props} />
+						</React.Suspense>
+					</QueryClientProvider>
+				</ErrorBoundary>
+			</React.StrictMode>,
 		);
 	},
 });

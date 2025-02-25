@@ -1,22 +1,21 @@
 import { Head } from "@inertiajs/react";
 import {
 	ColumnFiltersState,
+	PaginationState,
 	SortingState,
 	VisibilityState,
 	getCoreRowModel,
 	getFacetedRowModel,
 	getFacetedUniqueValues,
-	getFilteredRowModel,
 	getPaginationRowModel,
-	getSortedRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
-import { SearchIcon } from "lucide-react";
+import { Loader, SearchIcon } from "lucide-react";
 import * as React from "react";
 
-import { PaginationResult } from "@/types/pagination";
+import { queryTable, request } from "@/lib/request";
 
-import { Input } from "@/components/ui/input";
+import { GeneralResponse, PaginationResult } from "@/types/pagination";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated";
 import { Header } from "@/components/layout/header";
@@ -25,6 +24,7 @@ import { Main } from "@/components/layout/main";
 import { DataTablePagination } from "@/components/data-table/pagination";
 import { DataTable } from "@/components/data-table/table";
 import { DataTableToolbar } from "@/components/data-table/toolbar";
+import { DebouncedInput } from "@/components/debounce-input";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -33,37 +33,47 @@ import { columns } from "./components/users-columns";
 import { UsersDialogs } from "./components/users-dialogs";
 import { UsersPrimaryButtons } from "./components/users-primary-buttons";
 import UsersProvider from "./context/users-context";
-import { User, userListSchema } from "./data/schema";
+import { User } from "./data/schema";
 
-interface Props {
-	users: PaginationResult<User>;
+async function listUser(params: any) {
+	const response = await request.get<GeneralResponse<PaginationResult<User>>>("/_/users/datatable", { params });
+	return response.data.data;
 }
 
-export default function Users(props: Props) {
-	const [data] = React.useState(userListSchema.parse(props.users.data));
+export default function Users() {
 	const [rowSelection, setRowSelection] = React.useState({});
-	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+	const [visibility, setVisibility] = React.useState<VisibilityState>({});
+	const [filters, setFilters] = React.useState<ColumnFiltersState>([]);
 	const [sorting, setSorting] = React.useState<SortingState>([]);
+	const [pagination, setPagination] = React.useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+
+	const { data: response, isFetching } = queryTable(["datatable-general-user-list"], listUser, { filters, sorting, pagination });
 
 	const table = useReactTable({
-		data,
+		data: response?.data || [],
 		columns,
+		pageCount: response?.total_page || 0,
 		state: {
+			columnFilters: filters,
 			sorting,
-			columnVisibility,
+			pagination,
+			columnVisibility: visibility,
 			rowSelection,
-			columnFilters,
 		},
+		manualPagination: true,
+		manualSorting: true,
+		manualFiltering: true,
 		enableRowSelection: true,
+		onPaginationChange: setPagination,
 		onRowSelectionChange: setRowSelection,
 		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
-		onColumnVisibilityChange: setColumnVisibility,
+		onColumnFiltersChange: setFilters,
+		onColumnVisibilityChange: setVisibility,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
-		getSortedRowModel: getSortedRowModel(),
 		getFacetedRowModel: getFacetedRowModel(),
 		getFacetedUniqueValues: getFacetedUniqueValues(),
 	});
@@ -83,7 +93,10 @@ export default function Users(props: Props) {
 				<Main>
 					<div className="mb-2 flex flex-wrap items-center justify-between space-y-2">
 						<div>
-							<h2 className="text-2xl font-bold tracking-tight">User List</h2>
+							<h2 className="text-2xl font-bold tracking-tight">
+								User List
+								{isFetching && <Loader className="ml-2 inline-flex h-4 w-4 animate-spin" />}
+							</h2>
 							<p className="text-muted-foreground">Manage your users and their roles here.</p>
 						</div>
 						<UsersPrimaryButtons />
@@ -93,10 +106,10 @@ export default function Users(props: Props) {
 							<DataTableToolbar table={table}>
 								<div className="relative">
 									<SearchIcon className="text-muted-foreground absolute left-2 top-2 h-4 w-4" />
-									<Input
+									<DebouncedInput
 										placeholder="Search by name..."
-										value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-										onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+										value={(table.getColumn("name")?.getFilterValue() as string) || ""}
+										onChange={(value) => table.getColumn("name")?.setFilterValue(value)}
 										className="h-8 w-[150px]  pl-8 lg:w-[250px]"
 									/>
 								</div>
