@@ -75,29 +75,12 @@ interface SidebarMenuCollapsibleProps {
 }
 const SidebarMenuCollapsible = ({ item, href, menu }: SidebarMenuCollapsibleProps) => {
 	const { setOpenMobile } = useSidebar();
-	let menus = item.items
-		.map((subItem) => {
-			if (subItem.permissions) {
-				if (!canAccess(menu, ...subItem.permissions)) {
-					return null;
-				}
-			}
-			return (
-				<SidebarMenuSubItem key={subItem.title}>
-					<SidebarMenuSubButton asChild isActive={checkIsActive(href, subItem)}>
-						<Link href={subItem.url} onClick={() => setOpenMobile(false)}>
-							{subItem.icon && <subItem.icon />}
-							<span>{subItem.title}</span>
-							{subItem.badge && <NavBadge>{subItem.badge}</NavBadge>}
-						</Link>
-					</SidebarMenuSubButton>
-				</SidebarMenuSubItem>
-			);
-		})
-		.filter(Boolean);
+
+	let menus = item.items.filter((i) => !(i.permissions && !canAccess(menu, ...i.permissions)));
 	if (menus.length === 0) {
 		return null;
 	}
+
 	return (
 		<Collapsible asChild defaultOpen={checkIsActive(href, item, true)} className="group/collapsible">
 			<SidebarMenuItem>
@@ -110,7 +93,19 @@ const SidebarMenuCollapsible = ({ item, href, menu }: SidebarMenuCollapsibleProp
 					</SidebarMenuButton>
 				</CollapsibleTrigger>
 				<CollapsibleContent className="CollapsibleContent">
-					<SidebarMenuSub>{menus.map((m) => m)}</SidebarMenuSub>
+					<SidebarMenuSub>
+						{menus.map((menu) => (
+							<SidebarMenuSubItem key={menu.title}>
+								<SidebarMenuSubButton asChild isActive={checkIsActive(href, menu)}>
+									<Link href={menu.url} onClick={() => setOpenMobile(false)}>
+										{menu.icon && <menu.icon />}
+										<span>{menu.title}</span>
+										{menu.badge && <NavBadge>{menu.badge}</NavBadge>}
+									</Link>
+								</SidebarMenuSubButton>
+							</SidebarMenuSubItem>
+						))}
+					</SidebarMenuSub>
 				</CollapsibleContent>
 			</SidebarMenuItem>
 		</Collapsible>
@@ -124,26 +119,7 @@ interface SidebarMenuCollapsedDropdownProps {
 }
 
 const SidebarMenuCollapsedDropdown = ({ item, href, menu }: SidebarMenuCollapsedDropdownProps) => {
-	let menus = item.items
-		.map((sub) => {
-			if (sub.permissions) {
-				if (!canAccess(menu, ...sub.permissions)) {
-					return null;
-				}
-			}
-
-			return (
-				<DropdownMenuItem key={`${sub.title}-${sub.url}`} asChild>
-					<Link href={sub.url} className={`${checkIsActive(href, sub) ? "bg-secondary" : ""}`}>
-						{sub.icon && <sub.icon />}
-						<span className="max-w-52 text-wrap">{sub.title}</span>
-						{sub.badge && <span className="ml-auto text-xs">{sub.badge}</span>}
-					</Link>
-				</DropdownMenuItem>
-			);
-		})
-		.filter(Boolean);
-
+	let menus = item.items.filter((i) => !(i.permissions && !canAccess(menu, ...i.permissions)));
 	if (menus.length === 0) {
 		return null;
 	}
@@ -164,7 +140,15 @@ const SidebarMenuCollapsedDropdown = ({ item, href, menu }: SidebarMenuCollapsed
 						{item.title} {item.badge ? `(${item.badge})` : ""}
 					</DropdownMenuLabel>
 					<DropdownMenuSeparator />
-					{menus.map((m) => m)}
+					{menus.map((sub) => (
+						<DropdownMenuItem key={`${sub.title}-${sub.url}`} asChild>
+							<Link href={sub.url} className={`${checkIsActive(href, sub) ? "bg-secondary" : ""}`}>
+								{sub.icon && <sub.icon />}
+								<span className="max-w-52 text-wrap">{sub.title}</span>
+								{sub.badge && <span className="ml-auto text-xs">{sub.badge}</span>}
+							</Link>
+						</DropdownMenuItem>
+					))}
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</SidebarMenuItem>
