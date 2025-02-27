@@ -40,10 +40,11 @@ func NewUserRepository(deps UserRepositoryDependencies) *UserRepository {
 
 func (r *UserRepository) SetupSuperUser(user *model.MUser) error {
 	policy := model.CfgPolicy{
-		Name:     "Allow All Function",
-		Action:   action.SpecialAll,
-		Effect:   access.EffectAllow,
-		Resource: sql.String("all"),
+		Name:        "Allow All Function",
+		Description: sql.String("Will allow every action in this application"),
+		Action:      action.SpecialAll,
+		Effect:      access.EffectAllow,
+		Resource:    sql.String("all"),
 	}
 
 	role := model.MRole{

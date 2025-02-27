@@ -86,11 +86,18 @@ func WebRouter(deps WebRouterDependencies) server.WebRouter {
 
 		authSetting := system.Group("/auth").Name("auth.")
 		authSetting.Get("/role", deps.SettingSystemAuth.Role).Name("role")
-		authSetting.Get("/role/datatable", deps.SettingSystemAuth.RoleDatatable).Name("role")
+		authSetting.Get("/role/datatable", deps.SettingSystemAuth.RoleDatatable).Name("role.datatable")
+		authSetting.Get("/role/:id/policies", deps.SettingSystemAuth.RolePolicies).Name("role.policies")
 		authSetting.Get("/policy", deps.SettingSystemAuth.Policy).Name("policy")
+		authSetting.Get("/policy/datatable", deps.SettingSystemAuth.PolicyDatatable).Name("policy.datatable")
+		authSetting.Get("/policy/:id/roles", deps.SettingSystemAuth.PolicyRoles).Name("policy.roles")
 
 		r.Get("/_/*", func(ctx *fiber.Ctx) error {
-			return deps.Inertia.Render(ctx.Status(fiber.StatusNotFound), "error/not-found")
+			if inertia.IsInertiaRequest(ctx) {
+				return deps.Inertia.Render(ctx.Status(fiber.StatusNotFound), "error/not-found")
+			}
+
+			return ctx.SendStatus(fiber.StatusNotFound)
 		}).Name("error.not-found")
 
 		r.Get("*", deps.ClientPage.NotFound).Name("error.not-found")

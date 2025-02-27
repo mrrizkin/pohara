@@ -5,10 +5,9 @@ import { SearchProvider } from "@/context/search-context";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { BaseLayout } from "@/components/layout/base";
 
 import SkipToMain from "@/components/skip-to-main";
-
-import { BaseLayout } from "./base";
 
 interface AuthenticatedLayoutProps {
 	children?: React.ReactNode;
@@ -20,7 +19,7 @@ function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
 			<SearchProvider>
 				<SidebarProvider>
 					<SkipToMain />
-					<AppSidebar />
+					<AppSidebar variant="sidebar" />
 					<div
 						id="content"
 						className={cn(

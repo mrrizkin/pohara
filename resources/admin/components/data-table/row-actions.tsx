@@ -1,8 +1,7 @@
 import { Ellipsis } from "lucide-react";
-import { Fragment } from "react/jsx-runtime";
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface DataTableRowActionsProps {
 	buttons: DropdownButtons[];
@@ -26,13 +25,10 @@ export function DataTableRowActions({ buttons }: DataTableRowActionsProps) {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-[160px]">
 				{buttons.map((button, index) => (
-					<Fragment key={index}>
-						<DropdownMenuItem onClick={button.onClick} className={button.className}>
-							{button.text}
-							{button.shortcutIcon && <DropdownMenuShortcut>{button.shortcutIcon}</DropdownMenuShortcut>}
-						</DropdownMenuItem>
-						{buttons.length != index + 1 && <DropdownMenuSeparator />}
-					</Fragment>
+					<DropdownMenuItem key={index} onClick={button.onClick} className={button.className}>
+						{button.text}
+						{button.shortcutIcon && <DropdownMenuShortcut>{button.shortcutIcon}</DropdownMenuShortcut>}
+					</DropdownMenuItem>
 				))}
 			</DropdownMenuContent>
 		</DropdownMenu>

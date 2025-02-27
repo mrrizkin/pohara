@@ -31,7 +31,7 @@ export const useRoles = () => {
 	const usersContext = React.useContext(RolesContext);
 
 	if (!usersContext) {
-		throw new Error("useUsers has to be used within <UsersContext>");
+		throw new Error("useRoles has to be used within <RolesContext>");
 	}
 
 	return usersContext;

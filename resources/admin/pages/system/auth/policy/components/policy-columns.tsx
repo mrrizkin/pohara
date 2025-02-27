@@ -8,10 +8,10 @@ import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { DataTableRowActions, DropdownButtons } from "@/components/data-table/row-actions";
 import LongText from "@/components/long-text";
 
-import { useRoles } from "../context/roles-context";
-import { Role } from "../data/schema";
+import { usePolicy } from "../context/policy-context";
+import { Policy } from "../data/schema";
 
-export const columns: ColumnDef<Role>[] = [
+export const columns: ColumnDef<Policy>[] = [
 	column.expand(),
 	column.select(),
 	{
@@ -33,6 +33,24 @@ export const columns: ColumnDef<Role>[] = [
 		cell: ({ row }) => <div className="w-fit text-nowrap">{row.getValue("description")}</div>,
 	},
 	{
+		accessorKey: "action",
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Action" />,
+		cell: ({ row }) => <div>{row.getValue("action")}</div>,
+		enableSorting: false,
+	},
+	{
+		accessorKey: "resource",
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Resource" />,
+		cell: ({ row }) => <div>{row.getValue("resource")}</div>,
+		enableSorting: false,
+	},
+	{
+		accessorKey: "effect",
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Effect" />,
+		cell: ({ row }) => <div>{row.getValue("effect")}</div>,
+		enableSorting: false,
+	},
+	{
 		id: "actions",
 		cell: Action,
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Edit" />,
@@ -40,8 +58,8 @@ export const columns: ColumnDef<Role>[] = [
 	},
 ];
 
-function Action({ row }: { row: Row<Role> }) {
-	const { setOpen, setCurrentRow } = useRoles();
+function Action({ row }: { row: Row<Policy> }) {
+	const { setOpen, setCurrentRow } = usePolicy();
 
 	let buttons: DropdownButtons[] = [
 		{

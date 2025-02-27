@@ -12,6 +12,7 @@ func (m *CreateCfgPolicyTable) Up(schema *migration.Schema) {
 	schema.CreateNotExist("cfg_policy", func(table *migration.Blueprint) {
 		table.ID()
 		table.Text("name")
+		table.Text("description").Nullable()
 		table.Text("condition").Nullable()
 		table.Text("action")
 		table.Text("effect")

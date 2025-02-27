@@ -6,14 +6,15 @@ import (
 )
 
 type CfgPolicy struct {
-	ID        uint               `json:"id"         gorm:"primaryKey"`
-	Name      string             `json:"name"`
-	Condition sql.StringNullable `json:"condition"`
-	Action    access.Action      `json:"action"`
-	Effect    access.Effect      `json:"effect"`
-	Resource  sql.StringNullable `json:"resource"`
-	CreatedAt sql.TimeNullable   `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt sql.TimeNullable   `json:"updated_at" gorm:"autoUpdateTime"`
+	ID          uint               `json:"id"         gorm:"primaryKey"`
+	Name        string             `json:"name"`
+	Description sql.StringNullable `json:"description"`
+	Condition   sql.StringNullable `json:"-"`
+	Action      access.Action      `json:"action"`
+	Effect      access.Effect      `json:"effect"`
+	Resource    sql.StringNullable `json:"resource"`
+	CreatedAt   sql.TimeNullable   `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   sql.TimeNullable   `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (CfgPolicy) TableName() string {

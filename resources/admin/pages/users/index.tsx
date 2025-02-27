@@ -67,6 +67,7 @@ export default function Users() {
 		manualSorting: true,
 		manualFiltering: true,
 		enableRowSelection: true,
+		getRowCanExpand: () => true,
 		onPaginationChange: setPagination,
 		onRowSelectionChange: setRowSelection,
 		onSortingChange: setSorting,

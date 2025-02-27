@@ -61,7 +61,7 @@ export function RolesActionDialog({ currentRow, open, onOpenChange }: Props) {
 				</DialogHeader>
 				<ScrollArea className="-mr-4 h-[8rem] w-full py-1 pr-4">
 					<Form {...form}>
-						<form id="user-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-0.5">
+						<form id="role-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-0.5">
 							<FormField
 								control={form.control}
 								name="name"
@@ -92,7 +92,7 @@ export function RolesActionDialog({ currentRow, open, onOpenChange }: Props) {
 					</Form>
 				</ScrollArea>
 				<DialogFooter>
-					<Button type="submit" form="user-form">
+					<Button type="submit" form="role-form">
 						Save changes
 					</Button>
 				</DialogFooter>

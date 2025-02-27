@@ -28,5 +28,8 @@ func ApiRouterV1(deps ApiRouterV1Dependencies) server.ApiRouter {
 		user.Put("/:id", deps.User.UserUpdate).Name("update")
 		user.Delete("/:id", deps.User.UserDelete).Name("destroy")
 
+		r.Get("/*", func(ctx *fiber.Ctx) error {
+			return ctx.SendStatus(fiber.StatusNotFound)
+		}).Name("error.not-found")
 	}, "api.v1.")
 }

@@ -1,10 +1,13 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/mrrizkin/pohara/app/model"
 	"github.com/mrrizkin/pohara/modules/common/sql"
 	"github.com/mrrizkin/pohara/modules/database/db"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 type RoleRepository struct {
@@ -40,6 +43,20 @@ func (a *RoleRepository) GetMRoleByID(id uint) (*model.MRole, error) {
 	return &mRole, nil
 }
 
+func (a *RoleRepository) GetRolePolicies(id uint) ([]model.CfgPolicy, error) {
+	policies := make([]model.CfgPolicy, 0)
+	err := a.db.Table("cfg_policy cp").
+		Select("cp.*").
+		Joins("INNER JOIN jt_role_policy jrp ON cp.id = jrp.policy_id").
+		Where("jrp.role_id = ?", id).
+		Find(&policies).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return policies, err
+}
+
 func (r *RoleRepository) Find(
 	search sql.StringNullable,
 	paginateParams QueryPaginateParams,
@@ -47,7 +64,7 @@ func (r *RoleRepository) Find(
 	var roles []model.MRole
 	query := r.db.Model(&roles)
 	if search.Valid {
-		query.Where("name ILIKE ?", "%"+search.String+"%")
+		query.Where("name LIKE ?", "%"+search.String+"%")
 	}
 	return QueryPaginate(query, roles, paginateParams)
 }

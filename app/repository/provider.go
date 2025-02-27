@@ -7,4 +7,5 @@ var Provide = fx.Provide(
 	NewUserRepository,
 	NewSettingRepository,
 	NewRoleRepository,
+	NewPolicyRepository,
 )
